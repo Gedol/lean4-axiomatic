@@ -24,7 +24,7 @@ class Ops (α : Type) :=
 export Ops (ident)
 
 /-- Enables the use of the `· * ·` operator for binop. -/
-local instance group_mul_op_inst {α : Type} [Ops α] : Mul α := {
+local instance {α : Type} [Ops α] : Mul α := {
   mul := Group.Ops.binop
 }
 
