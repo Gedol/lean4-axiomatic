@@ -10,21 +10,6 @@ open Relation.Equivalence (EqvOp)
 A formalization of Group using multiplicative notation.
 
 Experimental approach 2: make binop, ident parameters
-
-Problem compiling line below:
-attribute [instance] Group2.toOps
-
-maybe that's ok.
-
-Also I do not know how to define a Mul instance so that instead of writing
-binop a b
-we write
-a * b
-
-when binop is always passed in a param.
-
-}
-
 -/
 
 /-! ### Definitions -/
@@ -34,42 +19,37 @@ existence of inverses.
 -/
 class Ops (α : Type) :=
   inverse : (x : α) → α
+
 export Ops (inverse)
 
-postfix:120 "⁻¹" => Group2.Ops.inverse
-
+-- todo postfix:120 "⁻¹" => Group2.Ops.inverse
 
 /-- Properties of Group.
-
 For testing purposes just a subset of what we'd really have.
  -/
-class Props (α : Type) [EqvOp α] [Ops α]
-  (binop : α → α → α) (ident : α) :=
+class Props (α : Type) [EqvOp α] (binop : α → α → α) (ident : α) [Ops α]:=
   substL {x y z : α} : x ≃ y → binop x z ≃ binop y z
-  inverseL (x : α) : binop (x ⁻¹) x ≃ ident
+  inverseL (x : α) : binop (inverse x) x ≃ ident
+  inverseR (x : α) : binop x (inverse x) ≃ ident
 
 export Props (
-  substL inverseL
+  substL inverseL inverseR
 )
 
 /-- All axioms for generic types to form a Group. -/
-class Group2 (α : Type) [eqv : EqvOp α]
-    (binop : outParam α → α → α)  (ident : outParam α) :=
+class Group2 (α : Type) [eqv : EqvOp α] (binop : α → α → α) (ident : α) :=
   toOps : Group2.Ops α
   toProps : Group2.Props α binop ident
 
-
 /-
+Following line gives error:
 cannot find synthesization order for instance @Group2.toOps with type
-  {α : Type} →
-    [eqv : EqvOp α] → (binop : outParam α → α → α) → {ident : outParam α} → [self : Group2 α binop ident] → Ops α
+  {α : Type} → [eqv : EqvOp α] → (binop : α → α → α) → (ident : α) → [self : Group2 α binop ident] → Ops α
 all remaining arguments have metavariables:
-  @Group2 α eqv ?binop ?ident
+  @Group2 α eqv ?binop ?identLean 4
 -/
-/-
 attribute [instance] Group2.toOps  -- ← Error here "cannot find synthesization
 attribute [instance] Group2.toProps
--/
 
 
 variable {α : Type} [EqvOp α] (binop : α → α → α) (ident : outParam α)
@@ -82,7 +62,7 @@ local instance group_mul_op_inst [Ops α] : Mul α := {
 
 /-- Enables the use of `AA.substL`, `AA.substR`, etc. -/
 local instance group_subst_inst
-    : AA.Substitutive₂ (α := α) (· * ·) AA.tc (· ≃ ·) (· ≃ ·)
+    : AA.Substitutive₂ (α := α) (· * ·) AA.tc (· ≃ ·) (· ≃ ·) -- failed to synthesize error
     := {
   substitutiveL := { subst₂ := λ (_ : True) => substL }
   substitutiveR := { subst₂ := λ (_ : True) => substR }
