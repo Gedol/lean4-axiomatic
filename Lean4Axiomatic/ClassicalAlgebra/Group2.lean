@@ -27,17 +27,38 @@ export Ops (inverse)
 /-- Properties of Group.
 For testing purposes just a subset of what we'd really have.
  -/
-class Props (α : Type) [EqvOp α] (binop : α → α → α) (ident : α) [Ops α]:=
-  substL {x y z : α} : x ≃ y → binop x z ≃ binop y z
+class Props
+    (α : Type) [EqvOp α]
+    (binop : semiOutParam (α → α → α)) (ident : semiOutParam α) [Ops α]
+    :=
+  _substL {x y z : α} : x ≃ y → binop x z ≃ binop y z
+  _substR {x y z : α} : x ≃ y → binop z x ≃ binop z y
   inverseL (x : α) : binop (inverse x) x ≃ ident
   inverseR (x : α) : binop x (inverse x) ≃ ident
 
+def substL
+    {α : Type} [EqvOp α] {binop : α → α → α} {ident : α}
+    [Ops α] [Props α binop ident] {x y z : α}
+    : x ≃ y → binop x z ≃ binop y z
+    :=
+  Props._substL ident
+
+def substR
+    {α : Type} [EqvOp α] {binop : α → α → α} {ident : α}
+    [Ops α] [Props α binop ident] {x y z : α}
+    : x ≃ y → binop z x ≃ binop z y
+    :=
+  Props._substR ident
+
 export Props (
-  substL inverseL inverseR
+  inverseL inverseR
 )
 
 /-- All axioms for generic types to form a Group. -/
-class Group2 (α : Type) [eqv : EqvOp α] (binop : α → α → α) (ident : α) :=
+class Group2
+    (α : Type) [eqv : EqvOp α]
+    (binop : semiOutParam (α → α → α)) (ident : semiOutParam α)
+    :=
   toOps : Group2.Ops α
   toProps : Group2.Props α binop ident
 
@@ -52,21 +73,26 @@ attribute [instance] Group2.toOps  -- ← Error here "cannot find synthesization
 attribute [instance] Group2.toProps
 
 
-variable {α : Type} [EqvOp α] (binop : α → α → α) (ident : outParam α)
-  [g : Group2 α binop ident]
-
-
-local instance group_mul_op_inst [Ops α] : Mul α := {
+local instance group_mul_op_inst
+    {α : Type} [EqvOp α] {binop : α → α → α} {ident : α} [Group2 α binop ident]
+    : Mul α := {
   mul := binop
 }
 
 /-- Enables the use of `AA.substL`, `AA.substR`, etc. -/
 local instance group_subst_inst
-    : AA.Substitutive₂ (α := α) (· * ·) AA.tc (· ≃ ·) (· ≃ ·) -- failed to synthesize error
+    {α : Type} [EqvOp α] {binop : α → α → α} {ident : α} [Group2 α binop ident]
+    : AA.Substitutive₂ (α := α) (· * ·) AA.tc (· ≃ ·) (· ≃ ·)
     := {
   substitutiveL := { subst₂ := λ (_ : True) => substL }
+   -- cruhland: still getting an error here; i think bc `ident` is not used,
+   -- so Lean is unable to determine a value for it?
   substitutiveR := { subst₂ := λ (_ : True) => substR }
 }
+
+variable {α : Type} [EqvOp α] {binop : α → α → α} {ident : α}
+  [g : Group2 α binop ident]
+
 
 /--
 You May perform cancellation of an element x, and conclude from
