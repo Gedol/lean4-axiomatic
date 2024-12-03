@@ -1,4 +1,5 @@
 import Lean4Axiomatic.Integer.Multiplication
+import Lean4Axiomatic.ClassicalAlgebra.Group
 
 /-!
 # Integer negation
@@ -317,5 +318,25 @@ cancellation of addition.
 -/
 theorem add_bijectR {a₁ a₂ b : ℤ} : a₁ ≃ a₂ ↔ a₁ + b ≃ a₂ + b :=
   Iff.intro AA.substL add_cancelR
+
+/-
+Example showing that integers with addition form a Group.
+-/
+local instance add_group_ops : CA.Group.Ops ℤ := {
+  --inverse := (-·)
+  inverse := λ x => -x
+}
+
+def add_group_props : CA.Group.Props (α := ℤ)
+  (binop := (· + ·)) (ident := 0) :=
+{
+  substL := AA.substL
+  substR := AA.substR
+  assoc := AA.assoc
+  identL := AA.identL
+  identR := AA.identR
+  inverseL := λ _ => AA.inverseL
+  inverseR := λ _ => AA.inverseR
+}
 
 end Lean4Axiomatic.Integer
