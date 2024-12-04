@@ -417,19 +417,19 @@ theorem pow_compatL_add
       _ ≃ x^(0 + m)     := Rel.refl
       _ ≃ x^m           := (pow_substR mul ident) AA.identL
       _ ≃ 1 * x^m       := Rel.symm identL
-      _ ≃ x^(0:ℕ) * x^m := AA.substL (Rel.symm pow_zero)
+      _ ≃ x^(0:ℕ) * x^m := AA.substL (Rel.symm exp_inst.toProps.pow_zero)
   case step =>
     intro n' (ih : x^(n' + m) ≃ x^n' * x^m)
     show x^(step n' + m) ≃ x^(step n') * x^m
     calc
       _ ≃ x^(step n' + m)   := Rel.refl
-      _ ≃ x^(step (n' + m)) := pow_substR (Rel.symm AA.scompatL)
-      _ ≃ x^(n' + m) * x    := pow_step
+      _ ≃ x^(step (n' + m)) := (pow_substR mul ident) (Rel.symm AA.scompatL)
+      _ ≃ x^(n' + m) * x    := exp_inst.toProps.pow_step
       _ ≃ (x^n' * x^m) * x  := AA.substL ih
       _ ≃ x^n' * (x^m * x)  := AA.assoc
       _ ≃ x^n' * (x * x^m)  := AA.substR AA.comm
       _ ≃ (x^n' * x) * x^m  := Rel.symm AA.assoc
-      _ ≃ x^(step n') * x^m := AA.substL (Rel.symm pow_step)
+      _ ≃ x^(step n') * x^m := AA.substL (Rel.symm exp_inst.toProps.pow_step)
 
 variable [Multiplication ℕ]
 
@@ -452,16 +452,16 @@ theorem pow_flatten
       _ ≃ (x^n)^0   := Rel.refl
       _ ≃ 1         := pow_zero
       _ ≃ x^0       := Rel.symm pow_zero
-      _ ≃ x^(n * 0) := pow_substR (Rel.symm mul_zero)
+      _ ≃ x^(n * 0) := (pow_substR mul ident) (Rel.symm mul_zero)
   case step =>
     intro m' (ih : (x^n)^m' ≃ x^(n * m'))
     show (x^n)^(step m') ≃ x^(n * step m')
     calc
       _ ≃ (x^n)^(step m')  := Rel.refl
-      _ ≃ (x^n)^m' * x^n   := pow_step
+      _ ≃ (x^n)^m' * x^n   := exp_inst.toProps.pow_step
       _ ≃ x^(n * m') * x^n := AA.substL ih
-      _ ≃ x^(n * m' + n)   := Rel.symm pow_compatL_add
-      _ ≃ x^(n * step m')  := pow_substR (Rel.symm mul_step)
+      _ ≃ x^(n * m' + n)   := Rel.symm (pow_compatL_add mul ident)
+      _ ≃ x^(n * step m')  := (pow_substR mul ident) (Rel.symm mul_step)
 
 end general
 
