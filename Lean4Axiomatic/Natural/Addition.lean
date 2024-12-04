@@ -1,5 +1,5 @@
 import Lean4Axiomatic.Natural.Core
-import Lean4Axiomatic.ClassicalAlgebra.Monoid
+import Lean4Axiomatic.ClassicalAlgebra.MonoidOpsAsParams
 
 /-!
 # Natural number addition
@@ -329,12 +329,13 @@ theorem zero_sum_split {n m : ℕ} : n + m ≃ 0 ↔ n ≃ 0 ∧ m ≃ 0 := by
 Example showing that naturals numbers with addition form a Monoid and use
 that fact to prove something.
 -/
-local instance add_monoid_ops :  CA.Monoid.Ops ℕ := {
+/- local instance add_monoid_ops :  CA.Monoid.Ops ℕ := {
   binop := (· + ·)
   ident := 0
 }
+ -/
 
-def add_monoid_props : CA.Monoid.Props (α := ℕ) :=
+def add_monoid_props : CA.Monoid.Props (α := ℕ) (· + ·) 0 :=
   let subst_addL {n₁ n₂ m : ℕ} : n₁ ≃ n₂ → n₁ + m ≃ n₂ + m := AA.substL;
   let subst_addR {n₁ n₂ m : ℕ} : n₁ ≃ n₂ → m + n₁ ≃ m + n₂ := AA.substR;
 {
@@ -345,13 +346,12 @@ def add_monoid_props : CA.Monoid.Props (α := ℕ) :=
   identR  := add_identity.identityR.ident
 }
 
-instance add_monoid : CA.Monoid.Monoid (α := ℕ) := {
-  toOps   := add_monoid_ops
+instance add_monoid : CA.Monoid.Monoid (α := ℕ) (binop := (· + ·)) (ident := 0) := {
   toProps := add_monoid_props
 }
 
 example : (x : ℕ) → ((y : ℕ) → (x + y ≃ y)) → x ≃ 0 := by
   intro x x_ident_prop
-  exact CA.Monoid.mul_identity_unique x_ident_prop
+  exact CA.Monoid.identity_unique (binop := (· + ·)) x_ident_prop
 
 end Lean4Axiomatic.Natural

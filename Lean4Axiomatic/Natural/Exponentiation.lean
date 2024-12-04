@@ -6,7 +6,7 @@ import Lean4Axiomatic.Natural.Multiplication
 
 namespace Lean4Axiomatic.Natural
 
-open CA.Monoid (ident binop identL identR)
+open CA.Monoid (identL identR)
 open Logic (AP)
 open Relation.Equivalence (EqvOp)
 open Signed (Positive)
@@ -35,8 +35,10 @@ instance (priority := default+1) pow_inst
   pow := Exponentiation.Ops._pow
 }
 
-/-- Enables the use of `· * ·` syntax for `α`'s multiplication function. -/
-local instance mul_inst [EqvOp α] [CA.Monoid.Monoid α] : Mul α := {
+/- Enables the use of `· * ·` syntax for `α`'s multiplication function. -/
+
+/- old below-/
+/- local instance mul_inst [EqvOp α] [CA.Monoid.Monoid α] : Mul α := {
   mul := binop
 }
 
@@ -44,24 +46,36 @@ instance ofNatIdent [EqvOp α] [CA.Monoid.Monoid α] : OfNat α 1 := {
   ofNat := ident
 }
 
+ -/
+
+/- below gives strange error -/
+
+/- local instance mul_ins {α : Type} [EqvOp α] {binop : α → α → α} {ident : α} [Monoid α binop ident] : Mul α := {
+  mul := binop
+}
+ -/
+
 /-- Properties of exponentiation for a monoid type α to a natural number. -/
 class Exponentiation.Props
-    {ℕ : outParam Type} [Core ℕ]
-    {α : Type} [EqvOp α] [Ops α ℕ] [CA.Monoid.Monoid α]
+    {ℕ : Type} [Core ℕ]
+    {α : Type}
+    (mul : semiOutParam (α → α → α)) (ident : α) [EqvOp α] [Ops α ℕ]
+    [CA.Monoid.Monoid α mul ident]
     :=
   /-- Any number raised to the power zero is the monoid identity of α. -/
-  pow_zero {x : α} : x ^ (0:ℕ) ≃ 1
+  pow_zero {x : α} : x ^ (0:ℕ) ≃ ident
   /-- Adding one to the exponent multiplies the result by the base. -/
-  pow_step {x : α} {n : ℕ} : x ^ step n ≃ (x ^ n) * x
+  pow_step {x : α} {n : ℕ} : x ^ step n ≃ mul (x ^ n) x
 
 export Exponentiation.Props (pow_step pow_zero)
 
 /-- All exponentiation axioms. -/
 class Exponentiation
-    (ℕ : outParam Type) [Core ℕ] (α : Type) [EqvOp α] [CA.Monoid.Monoid α]
+    (ℕ : outParam Type) [Core ℕ] (α : Type) [EqvOp α]
+    (mul : semiOutParam (α → α → α)) (ident : α) [EqvOp α] [CA.Monoid.Monoid α mul ident]
     :=
   toOps : Exponentiation.Ops α ℕ
-  toProps : Exponentiation.Props (α := α)
+  toProps : Exponentiation.Props (α := α) mul ident
 
 attribute [instance] Exponentiation.toOps
 attribute [instance] Exponentiation.toProps
@@ -72,9 +86,32 @@ variable {ℕ : Type} [Core ℕ] [Induction.{0} ℕ]
 
 section general
 
+
+local instance monoid_mul_op_inst {α : Type} [EqvOp α] {binop : α → α → α} {ident : α} [CA.Monoid.Monoid α binop ident] : Mul α := {
+  mul := binop
+}
+
+instance ofNatIdent {α : Type} [EqvOp α]  {binop : α → α → α} {ident : α} [CA.Monoid.Monoid α binop ident] : OfNat α 1 := {
+  ofNat := ident
+}
+
+
 /-! ### General properties for any base type -/
 
-variable {α : Type} [EqvOp α] [CA.Monoid.Monoid α] [Exponentiation ℕ α]
+variable {α : Type} [EqvOp α]
+(mul : (α → α → α)) (ident : α) [CA.Monoid.Monoid α mul ident] [exp_inst : Exponentiation ℕ α mul ident]
+
+local instance mul_inst : Mul α := {
+  mul := mul
+}
+
+/-
+
+instance ofNatIdent : OfNat α 1 := {
+  ofNat := ident
+}
+
+ -/
 
 /--
 Equivalent values can be substituted for the base (left operand) in an
@@ -95,17 +132,17 @@ theorem pow_substL {x₁ x₂ : α} {m : ℕ} : x₁ ≃ x₂ → x₁ ^ m ≃ x
     show x₁ ^ 0 ≃ x₂ ^ 0
     calc
       _ ≃ x₁ ^ 0 := Rel.refl
-      _ ≃ 1      := pow_zero
-      _ ≃ x₂ ^ 0 := Rel.symm pow_zero
+      _ ≃ 1      := exp_inst.toProps.pow_zero
+      _ ≃ x₂ ^ 0 := Rel.symm exp_inst.toProps.pow_zero
   case step =>
     intro (m' : ℕ) (ih : x₁ ^ m' ≃ x₂ ^ m')
     show x₁ ^ step m' ≃ x₂ ^ step m'
     calc
       _ ≃ x₁ ^ step m' := Rel.refl
-      _ ≃ x₁ ^ m' * x₁ := pow_step
+      _ ≃ x₁ ^ m' * x₁ := exp_inst.toProps.pow_step
       _ ≃ x₂ ^ m' * x₁ := AA.substL ih
       _ ≃ x₂ ^ m' * x₂ := AA.substR ‹x₁ ≃ x₂›
-      _ ≃ x₂ ^ step m' := Rel.symm pow_step
+      _ ≃ x₂ ^ step m' := Rel.symm exp_inst.toProps.pow_step
 
 /--
 Equivalent values can be substituted for the exponent (right operand) in an
@@ -151,9 +188,9 @@ theorem pow_substR {x : α} {n₁ n₂ : ℕ} : n₁ ≃ n₂ → x ^ n₁ ≃ x
       have : n₁' ≃ n₂' := AA.inject ‹step n₁' ≃ step n₂'›
       calc
         _ ≃ x ^ step n₁' := Rel.refl
-        _ ≃ x ^ n₁' * x  := pow_step
+        _ ≃ x ^ n₁' * x  := exp_inst.toProps.pow_step
         _ ≃ x ^ n₂' * x  := AA.substL (ih ‹n₁' ≃ n₂'›)
-        _ ≃ x ^ step n₂' := Rel.symm pow_step
+        _ ≃ x ^ step n₂' := Rel.symm exp_inst.toProps.pow_step
 
 /--
 Exponents distribute over multiplication.
@@ -172,20 +209,20 @@ theorem pow_distribR_mul
     show (x * y)^0 ≃ x^0 * y^0
     calc
       _ ≃ (x * y)^0 := Rel.refl
-      _ ≃ 1         := pow_zero
+      _ ≃ 1         := exp_inst.toProps.pow_zero
       _ ≃ 1 * 1     := Rel.symm identR
-      _ ≃ x^0 * 1   := AA.substL (Rel.symm pow_zero)
-      _ ≃ x^0 * y^0 := AA.substR (Rel.symm pow_zero)
+      _ ≃ x^0 * 1   := AA.substL (Rel.symm exp_inst.toProps.pow_zero)
+      _ ≃ x^0 * y^0 := AA.substR (Rel.symm exp_inst.toProps.pow_zero)
   case step =>
     intro n' (ih : (x * y)^n' ≃ x^n' * y^n')
     show (x * y)^(step n') ≃ x^(step n') * y^(step n')
     calc
       _ ≃ (x * y)^(step n')         := Rel.refl
-      _ ≃ (x * y)^n' * (x * y)      := pow_step
+      _ ≃ (x * y)^n' * (x * y)      := exp_inst.toProps.pow_step
       _ ≃ (x^n' * y^n') * (x * y)   := AA.substL ih
       _ ≃ (x^n' * x) * (y^n' * y)   := AA.expr_xxfxxff_lr_swap_rl
-      _ ≃ x^(step n') * (y^n' * y)  := AA.substL (Rel.symm pow_step)
-      _ ≃ x^(step n') * y^(step n') := AA.substR (Rel.symm pow_step)
+      _ ≃ x^(step n') * (y^n' * y)  := AA.substL (Rel.symm exp_inst.toProps.pow_step)
+      _ ≃ x^(step n') * y^(step n') := AA.substR (Rel.symm exp_inst.toProps.pow_step)
 
 /--
 If an exponentiation to a natural number evaluates to zero, then the base must
@@ -206,13 +243,13 @@ theorem pow_inputs_for_output_zero
     show x ≃ 0 ∧ 0 ≄ 0
     have : (1:α) ≃ 0 := calc
       _ ≃ 1   := Rel.refl
-      _ ≃ x^0 := Rel.symm pow_zero
+      _ ≃ x^0 := Rel.symm exp_inst.toProps.pow_zero
       _ ≃ 0   := ‹x^(0:ℕ) ≃ 0›
     exact absurd ‹(1:α) ≃ 0› ‹AP ((1:α) ≄ 0)›.ev
   case step =>
     intro (n' : ℕ) (ih : x^n' ≃ 0 → x ≃ 0 ∧ n' ≄ 0) (_ : x^(step n') ≃ 0)
     show x ≃ 0 ∧ step n' ≄ 0
-    have : x^n' * x ≃ 0 := AA.eqv_substL pow_step ‹x^(step n') ≃ 0›
+    have : x^n' * x ≃ 0 := AA.eqv_substL exp_inst.toProps.pow_step ‹x^(step n') ≃ 0›
     have : x^n' ≃ 0 ∨ x ≃ 0 := AA.zero_prod this
     have : x ≃ 0 :=
       match this with
@@ -240,7 +277,7 @@ theorem pow_preserves_nonzero_base
     intro (And.intro (_ : x ≃ 0) (_ : n ≄ 0))
     show False
     exact absurd ‹x ≃ 0› ‹x ≄ 0›
-  have : x^n ≄ 0 := mt pow_inputs_for_output_zero this
+  have : x^n ≄ 0 := mt (pow_inputs_for_output_zero mul ident) this
   exact this
 
 /--
@@ -252,7 +289,7 @@ instance pow_preserves_nonzero_base_inst
     [OfNat α 0] [AP ((1:α) ≄ 0)] [AA.ZeroProduct (α := α) (· * ·)]
     {x : α} {n : ℕ} [AP (x ≄ 0)] : AP (x^n ≄ 0)
     :=
-  ‹AP (x ≄ 0)›.map pow_preserves_nonzero_base
+  ‹AP (x ≄ 0)›.map (pow_preserves_nonzero_base mul ident)
 
 /--
 Raising a number to the natural number one leaves the number unchanged.
@@ -264,9 +301,9 @@ multiplication, then that's just the original number.
 -/
 theorem pow_one {x : α} : x^1 ≃ x := calc
   _ = x^1        := rfl
-  _ ≃ x^(step 0) := pow_substR literal_step
-  _ ≃ x^0 * x    := pow_step
-  _ ≃ 1 * x      := AA.substL pow_zero
+  _ ≃ x^(step 0) := (pow_substR mul ident) literal_step
+  _ ≃ x^0 * x    := exp_inst.toProps.pow_step
+  _ ≃ 1 * x      := AA.substL exp_inst.toProps.pow_zero
   _ ≃ x          := identL
 
 /--
@@ -278,9 +315,9 @@ Convert between a square and its representation as a product.
 -/
 theorem pow_two {x : α} : x^2 ≃ x * x := calc
   _ = x^2        := rfl
-  _ ≃ x^(step 1) := pow_substR literal_step
-  _ ≃ x^1 * x    := pow_step
-  _ ≃ x * x      := AA.substL pow_one
+  _ ≃ x^(step 1) := (pow_substR mul ident) literal_step
+  _ ≃ x^1 * x    := exp_inst.toProps.pow_step
+  _ ≃ x * x      := AA.substL (pow_one mul ident)
 
 /--
 Any power of one is one.
@@ -293,13 +330,13 @@ theorem pow_absorbL {n : ℕ} : (1:α)^n ≃ 1 := by
   apply ind_on n
   case zero =>
     show (1:α)^0 ≃ 1
-    exact pow_zero
+    exact exp_inst.toProps.pow_zero
   case step =>
     intro (n' : ℕ) (ih : (1:α)^n' ≃ 1)
     show (1:α)^(step n') ≃ 1
     calc
       _ = (1:α)^(step n') := rfl
-      _ ≃ (1:α)^n' * 1    := pow_step
+      _ ≃ (1:α)^n' * 1    := exp_inst.toProps.pow_step
       _ ≃ (1:α)^n'        := identR
       _ ≃ 1               := ih
 
@@ -323,7 +360,7 @@ theorem pow_eqv_zero
   apply Iff.intro
   case mp =>
     show x^n ≃ 0 → x ≃ 0 ∧ n ≄ 0
-    exact pow_inputs_for_output_zero
+    exact (pow_inputs_for_output_zero mul ident)
   case mpr =>
     intro (And.intro (_ : x ≃ 0) (_ : n ≄ 0))
     show x^n ≃ 0
@@ -331,8 +368,8 @@ theorem pow_eqv_zero
     have (Exists.intro (n' : ℕ) (_ : step n' ≃ n)) := positive_step this
     calc
       _ ≃ x^n         := Rel.refl
-      _ ≃ x^(step n') := pow_substR (Rel.symm ‹step n' ≃ n›)
-      _ ≃ x^n' * x    := pow_step
+      _ ≃ x^(step n') := (pow_substR mul ident) (Rel.symm ‹step n' ≃ n›)
+      _ ≃ x^n' * x    := exp_inst.toProps.pow_step
       _ ≃ x^n' * 0    := AA.substR ‹x ≃ 0›
       _ ≃ 0           := AA.absorbR
 
@@ -352,11 +389,11 @@ theorem pow_of_zero
   | Or.inl (_ : n ≃ 0) =>
     have : (0:α)^n ≃ 1 := calc
       _ = (0:α)^n := rfl
-      _ ≃ 0^0     := pow_substR ‹n ≃ 0›
-      _ ≃ 1       := pow_zero
+      _ ≃ 0^0     := (pow_substR mul ident) ‹n ≃ 0›
+      _ ≃ 1       := exp_inst.toProps.pow_zero
     exact Or.inr ‹(0:α)^n ≃ 1›
   | Or.inr (_ : n ≄ 0) =>
-    have : (0:α)^n ≃ 0 := pow_eqv_zero.mpr (And.intro Rel.refl ‹n ≄ 0›)
+    have : (0:α)^n ≃ 0 := (pow_eqv_zero mul ident).mpr (And.intro Rel.refl ‹n ≄ 0›)
     exact Or.inl ‹(0:α)^n ≃ 0›
 
 variable [Addition ℕ]
@@ -378,7 +415,7 @@ theorem pow_compatL_add
     show x^(0 + m) ≃ x^(0:ℕ) * x^m
     calc
       _ ≃ x^(0 + m)     := Rel.refl
-      _ ≃ x^m           := pow_substR AA.identL
+      _ ≃ x^m           := (pow_substR mul ident) AA.identL
       _ ≃ 1 * x^m       := Rel.symm identL
       _ ≃ x^(0:ℕ) * x^m := AA.substL (Rel.symm pow_zero)
   case step =>
