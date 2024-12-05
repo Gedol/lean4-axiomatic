@@ -36,24 +36,9 @@ instance (priority := default+1) pow_inst
 }
 
 /- Enables the use of `· * ·` syntax for `α`'s multiplication function. -/
-
-/- old below-/
-/- local instance mul_inst [EqvOp α] [CA.Monoid.Monoid α] : Mul α := {
+ local instance monoid_mul_op_inst {α : Type} [EqvOp α] {binop : α → α → α} {ident : α} [CA.Monoid.Monoid α binop ident] : Mul α := {
   mul := binop
 }
-
-instance ofNatIdent [EqvOp α] [CA.Monoid.Monoid α] : OfNat α 1 := {
-  ofNat := ident
-}
-
- -/
-
-/- below gives strange error -/
-
-/- local instance mul_ins {α : Type} [EqvOp α] {binop : α → α → α} {ident : α} [Monoid α binop ident] : Mul α := {
-  mul := binop
-}
- -/
 
 /-- Properties of exponentiation for a monoid type α to a natural number. -/
 class Exponentiation.Props
@@ -86,11 +71,6 @@ variable {ℕ : Type} [Core ℕ] [Induction.{0} ℕ]
 
 section general
 
-
-local instance monoid_mul_op_inst {α : Type} [EqvOp α] {binop : α → α → α} {ident : α} [CA.Monoid.Monoid α binop ident] : Mul α := {
-  mul := binop
-}
-
 instance ofNatIdent {α : Type} [EqvOp α]  {binop : α → α → α} {ident : α} [CA.Monoid.Monoid α binop ident] : OfNat α 1 := {
   ofNat := ident
 }
@@ -100,10 +80,6 @@ instance ofNatIdent {α : Type} [EqvOp α]  {binop : α → α → α} {ident : 
 
 variable {α : Type} [EqvOp α]
 (mul : (α → α → α)) (ident : α) [CA.Monoid.Monoid α mul ident] [exp_inst : Exponentiation ℕ α mul ident]
-
-local instance mul_inst : Mul α := {
-  mul := mul
-}
 
 /-
 
