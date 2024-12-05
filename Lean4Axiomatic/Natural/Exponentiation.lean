@@ -81,14 +81,6 @@ instance ofNatIdent {α : Type} [EqvOp α]  {binop : α → α → α} {ident : 
 variable {α : Type} [EqvOp α]
 (mul : (α → α → α)) (ident : α) [CA.Monoid.Monoid α mul ident] [exp_inst : Exponentiation ℕ α mul ident]
 
-/-
-
-instance ofNatIdent : OfNat α 1 := {
-  ofNat := ident
-}
-
- -/
-
 /--
 Equivalent values can be substituted for the base (left operand) in an
 exponentiation.
