@@ -349,6 +349,6 @@ instance add_monoid : CA.Monoid.Monoid (α := ℕ) (binop := (· + ·)) (ident :
 
 example : (x : ℕ) → ((y : ℕ) → (x + y ≃ y)) → x ≃ 0 := by
   intro x x_ident_prop
-  exact CA.Monoid.mul_identity_unique x_ident_prop
+  exact CA.Monoid.identity_unique (binop := (· + ·)) x_ident_prop  -- annoying that we must specify binop.
 
 end Lean4Axiomatic.Natural
