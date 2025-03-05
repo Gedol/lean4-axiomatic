@@ -17,19 +17,9 @@ operator is a monoid.
 
 /-! ### Definitions -/
 
-/-
-Operations for Monoid, namely the binary operation and identity element.
--/
-/- class Ops (α : Type) :=
-  binop : α → α → α
-  ident : α
-export Ops (ident binop) -/
-
-
 /-- Properties of Monoid. -/
 class Props (α : Type) [EqvOp α]
-    (binop : semiOutParam (α → α → α)) (ident : outParam α)
-    :=
+    (binop : semiOutParam (α → α → α)) (ident : outParam α) where
   substL {x y z : α} : x ≃ y → binop x z ≃ binop  y z
   substR {x y z : α} : x ≃ y → binop z x ≃ binop z y
   assoc {x y z : α} : binop (binop x y) z ≃ binop x (binop y z)
@@ -38,12 +28,12 @@ class Props (α : Type) [EqvOp α]
 export Props (substL substR assoc identL identR)
 
 /-- All axioms for generic types to form a Monoid. -/
-class Monoid (α : Type) [EqvOp α] (binop : semiOutParam (α → α → α)) (ident : outParam α) :=
+class Monoid (α : Type) [EqvOp α] (binop : semiOutParam (α → α → α)) (ident : outParam α) where
   toProps : Monoid.Props α binop ident
 
 
 class testOfMonoid
-  (α : semiOutParam Type) [EqvOp α] (mul : semiOutParam (α → α → α)) (ident : outParam α) [Monoid α mul ident] :=
+  (α : semiOutParam Type) [EqvOp α] (mul : semiOutParam (α → α → α)) (ident : outParam α) [Monoid α mul ident] where
   tempField : α
 
 attribute [instance] Monoid.toProps
