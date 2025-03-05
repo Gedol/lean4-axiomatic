@@ -56,7 +56,7 @@ export Exponentiation.Props (pow_step pow_zero)
 /-- All exponentiation axioms. -/
 class Exponentiation
     (ℕ : outParam Type) [Core ℕ] (α : Type) [EqvOp α]
-    (mul : outParam (α → α → α)) (ident : outParam α) [EqvOp α] [CA.Monoid.Monoid α mul ident]
+    (mul : outParam (α → α → α)) (ident : outParam α) [EqvOp α] [minst : CA.Monoid.Monoid α mul ident]
     where
   toOps : Exponentiation.Ops α ℕ
   toProps : Exponentiation.Props mul ident
