@@ -1,6 +1,7 @@
 import Lean4Axiomatic.AbstractAlgebra
 import Lean4Axiomatic.Logic
 import Lean4Axiomatic.Natural.Order
+import Lean4Axiomatic.ClassicalAlgebra.MonoidOpsAsParams
 
 /-!
 # Natural number multiplication
