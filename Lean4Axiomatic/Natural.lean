@@ -24,7 +24,7 @@ class Natural (ℕ : semiOutParam Type) :=
   toOrder : Order ℕ
   toCompare : Compare ℕ
   toMultiplication : Multiplication ℕ
-  toExponentiation : Exponentiation ℕ ℕ
+  toExponentiation : Exponentiation ℕ ℕ (mul := (· * ·)) (ident := 1)
 
 attribute [instance] Natural.toAddition
 attribute [instance] Natural.toCompare
