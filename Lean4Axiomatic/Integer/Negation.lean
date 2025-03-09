@@ -6,6 +6,8 @@ import Lean4Axiomatic.Integer.Multiplication
 
 namespace Lean4Axiomatic.Integer
 
+set_option linter.unusedSectionVars false
+
 /-!
 ## Axioms
 -/

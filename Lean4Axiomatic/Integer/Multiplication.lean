@@ -71,12 +71,8 @@ export Multiplication (mulOp)
 variable {ℕ : Type} [Natural ℕ]
 variable {ℤ : Type} [Core (ℕ := ℕ) ℤ] [Addition ℤ] [Multiplication ℤ]
 
-local instance mul_monoid_ops : CA.Monoid.Ops ℤ := {
-  binop := (· * ·)
-  ident := 1
-}
 
-def mul_monoid_props : CA.Monoid.Props (α := ℤ) := {
+def mul_monoid_props : CA.Monoid.Props (α := ℤ) (· * ·) 1 := {
   substL  := AA.substL
   substR  := AA.substR
   assoc   := AA.assoc
@@ -88,8 +84,7 @@ def mul_monoid_props : CA.Monoid.Props (α := ℤ) := {
 Integers with multiplication form a monoid.  This allow us to avoid
 reproving basic facts about integers that are true of all monoids.
 -/
-instance mul_monoid : CA.Monoid.Monoid (α := ℤ) := {
-  toOps   := mul_monoid_ops
+instance mul_monoid : CA.Monoid.Monoid (α := ℤ) (· * ·) 1 := {
   toProps := mul_monoid_props
 }
 

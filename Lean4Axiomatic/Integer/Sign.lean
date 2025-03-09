@@ -8,6 +8,8 @@ import Lean4Axiomatic.Sign
 
 namespace Lean4Axiomatic.Integer
 
+set_option linter.unusedSectionVars false
+
 open Coe (coe)
 open Logic (AP)
 open Signed (Negative Positive)

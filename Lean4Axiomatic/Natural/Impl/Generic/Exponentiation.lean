@@ -1,3 +1,4 @@
+
 import Lean4Axiomatic.Natural.Exponentiation
 
 /-!
@@ -7,15 +8,21 @@ import Lean4Axiomatic.Natural.Exponentiation
 namespace Lean4Axiomatic.Natural.Impl.Generic
 
 open Relation.Equivalence (EqvOp)
-open Lean4Axiomatic.CA.Monoid (ident binop identL identR)
+open Lean4Axiomatic.CA.Monoid (identL identR)
 
 variable
   {ℕ : Type} [Core ℕ] [Induction.{1} ℕ]
-  {α : Type} [EqvOp α] [CA.Monoid.Monoid α]
+  {α : Type} [EqvOp α]
+  {binop : α → α → α} {ident : α}
+  [m : CA.Monoid.Monoid α binop ident]
 
 /-- Enables the use of `· * ·` syntax. -/
-local instance mul_inst : Mul α := {
+local instance mul_inst {α : Type} [EqvOp α] {binop : α → α → α} {ident : α} [CA.Monoid.Monoid α binop ident] : Mul α := {
   mul := binop
+}
+
+local instance ofNatIdent {α : Type} [EqvOp α] {binop : α → α → α} {ident : α} [CA.Monoid.Monoid α binop ident] : OfNat α 1 := {
+  ofNat := ident
 }
 
 /--
@@ -24,10 +31,10 @@ Raise a value to a natural number power.
 **Definition intuition**: Performs the correct number of multiplications using
 recursion.
 -/
-def _pow (x : α) (n : ℕ) : α := rec_on n 1 (· * x)
+def _pow (x : α) (n : ℕ) : α := rec_on n ident (· * x)
 
 local instance exponentiation_ops : Exponentiation.Ops α ℕ := {
-  _pow := _pow
+  _pow := _pow (binop := binop) (ident := ident)
 }
 
 /--
@@ -53,12 +60,12 @@ theorem pow_step {x : α} {n : ℕ} : x ^ step n ≃ x ^ n * x := calc
   _ = (rec_on n 1 (· * x)) * x  := rec_on_step
   _ = x ^ n * x                 := rfl
 
-def exponentiation_props : Exponentiation.Props (α := α) := {
+def exponentiation_props : Exponentiation.Props (α := α) binop ident := {
   pow_zero := pow_zero
   pow_step := pow_step
 }
 
-def exponentiation : Exponentiation ℕ α := {
+def exponentiation : Exponentiation ℕ α binop ident := {
   toOps := exponentiation_ops
   toProps := exponentiation_props
 }

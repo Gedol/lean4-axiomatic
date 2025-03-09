@@ -13,12 +13,13 @@ namespace Lean4Axiomatic.Integer
 open Logic (AP iff_subst_covar or_mapL or_mapR)
 open Natural (step)
 open Signed (Positive)
+open Multiplication (mulOp)
 
 /-! ## Derived properties for exponentiation to a natural number -/
 
 variable
   {ℕ ℤ : Type} [Natural ℕ] [Core (ℕ := ℕ) ℤ] [Addition ℤ] [Multiplication ℤ]
-  [Natural.Exponentiation ℕ ℤ]
+  [Natural.Exponentiation ℕ (α := ℤ) (mul := (· * ·)) (ident := 1) (minst := mul_monoid)]
 
 /--
 Raising an integer to _any_ positive natural number power has no effect if
