@@ -75,6 +75,7 @@ class Literals (ℕ : outParam Type) [Constructor.Ops ℕ] [Equality ℕ] where
   literal_step {n : Nat}
     : OfNat.ofNat (α := ℕ) (Nat.succ n) ≃ step (OfNat.ofNat n)
 
+
 attribute [instance] Literals.literal
 
 /-

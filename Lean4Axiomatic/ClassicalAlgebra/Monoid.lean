@@ -43,17 +43,17 @@ attribute [gcongr] substL substR
 
 set_option linter.dupNamespace false in
 /-- All axioms for generic types to form a Monoid. -/
-class Monoid (α : Type) [EqvOp α] where
+class oldMonoid (α : Type) [EqvOp α] where
   toOps : Monoid.Ops α
   toProps : Monoid.Props α
 
-attribute [instance] Monoid.toOps
-attribute [instance] Monoid.toProps
+attribute [instance] oldMonoid.toOps
+attribute [instance] oldMonoid.toProps
 
 
 /-! ### Properties -/
 
-variable {α : Type} [EqvOp α] [m : Monoid α]
+variable {α : Type} [EqvOp α] [m : oldMonoid α]
 
 /-- Enables the use of `AA.substL`, `AA.substR`, etc. -/
 scoped instance monoid_subst_inst

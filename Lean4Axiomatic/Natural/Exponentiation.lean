@@ -64,7 +64,7 @@ class Exponentiation
 attribute [instance] Exponentiation.toOps
 attribute [instance] Exponentiation.toProps
 
-instance ofNatIdent {α : Type} [EqvOp α]  {binop : α → α → α} {ident : α} [CA.Monoid.Monoid α binop ident] : OfNat α 1 := {
+local instance ofNatIdent {α : Type} [EqvOp α] {binop : α → α → α} {ident : α} [CA.Monoid.Monoid α binop ident] : OfNat α 1 := {
   ofNat := ident
 }
 
