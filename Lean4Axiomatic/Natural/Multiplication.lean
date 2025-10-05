@@ -1,7 +1,8 @@
 import Lean4Axiomatic.AbstractAlgebra
 import Lean4Axiomatic.Logic
 import Lean4Axiomatic.Natural.Order
-import Lean4Axiomatic.ClassicalAlgebra.Monoid
+--import Lean4Axiomatic.ClassicalAlgebra.Monoid
+import Lean4Axiomatic.ClassicalAlgebra.MonoidOpsAsParams
 
 /-!
 # Natural number multiplication
@@ -545,12 +546,8 @@ theorem sqrt1 {n : ℕ} : n * n ≃ 1 ↔ n ≃ 1 := by
     have : n * n ≃ 1 := factors_eqv_1.mpr (And.intro ‹n ≃ 1› ‹n ≃ 1›)
     exact this
 
-local instance mul_monoid_ops :  CA.Monoid.Ops ℕ := {
-  binop := (· * ·)
-  ident := 1
-}
 
-def mul_monoid_props : CA.Monoid.Props (α := ℕ) := {
+def mul_monoid_props : CA.Monoid.Props (α := ℕ) (· * ·) 1 := {
   substL  := AA.substL
   substR  := AA.substR
   assoc   := mul_associative.assoc
@@ -562,8 +559,7 @@ def mul_monoid_props : CA.Monoid.Props (α := ℕ) := {
 Naturals numbers with multiplication form a monoid.  This allow us to avoid
 reproving basic facts about naturals that are true of all monoids.
 -/
-instance mul_monoid : CA.Monoid.Monoid (α := ℕ) := {
-  toOps   := mul_monoid_ops
+instance mul_monoid : CA.Monoid.Monoid (α := ℕ) (· * ·) 1 := {
   toProps := mul_monoid_props
 }
 

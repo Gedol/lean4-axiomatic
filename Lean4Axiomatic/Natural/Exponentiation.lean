@@ -6,7 +6,7 @@ import Lean4Axiomatic.Natural.Multiplication
 
 namespace Lean4Axiomatic.Natural
 
-open CA.Monoid (ident binop identL identR)
+open CA.Monoid (identL identR)
 open Logic (AP)
 open Relation.Equivalence (EqvOp)
 open Signed (Positive)
@@ -35,46 +35,58 @@ instance (priority := default+1) pow_inst
   pow := Exponentiation.Ops._pow
 }
 
-/-- Enables the use of `· * ·` syntax for `α`'s multiplication function. -/
-local instance mul_inst [EqvOp α] [CA.Monoid.Monoid α] : Mul α := {
+/- Enables the use of `· * ·` syntax for `α`'s multiplication function. -/
+local instance (priority := low) monoid_mul_op_inst {α : Type} [EqvOp α] {binop : α → α → α} {ident : α} [CA.Monoid.Monoid α binop ident] : Mul α := {
   mul := binop
 }
 
-instance ofNatIdent [EqvOp α] [CA.Monoid.Monoid α] : OfNat α 1 := {
+/- instance ofNatIdent [EqvOp α] [CA.Monoid.Monoid α] : OfNat α 1 := {
   ofNat := ident
-}
+} -/
+
 
 /-- Properties of exponentiation for a monoid type α to a natural number. -/
 class Exponentiation.Props
-    {ℕ : outParam Type} [Core ℕ]
-    {α : Type} [EqvOp α] [Ops α ℕ] [CA.Monoid.Monoid α]
-    where
+    {ℕ : Type} [Core ℕ]
+    {α : Type} [Ops α ℕ]
+    (mul : outParam (α → α → α)) (ident : outParam α) [EqvOp α]
+    [CA.Monoid.Monoid α mul ident] where
   /-- Any number raised to the power zero is the monoid identity of α. -/
-  pow_zero {x : α} : x ^ (0:ℕ) ≃ 1
+  pow_zero {x : α} : x ^ (0:ℕ) ≃ ident
   /-- Adding one to the exponent multiplies the result by the base. -/
-  pow_step {x : α} {n : ℕ} : x ^ step n ≃ (x ^ n) * x
+  pow_step {x : α} {n : ℕ} : x ^ step n ≃ (x ^ n) * x -- mul (x ^ n) ?
 
 export Exponentiation.Props (pow_step pow_zero)
 
 /-- All exponentiation axioms. -/
 class Exponentiation
-    (ℕ : outParam Type) [Core ℕ] (α : Type) [EqvOp α] [CA.Monoid.Monoid α]
+    (ℕ : outParam Type) [Core ℕ] (α : Type) [EqvOp α]
+    (mul : outParam (α → α → α)) (ident : outParam α) [EqvOp α] [minst : CA.Monoid.Monoid α mul ident]
     where
   toOps : Exponentiation.Ops α ℕ
-  toProps : Exponentiation.Props (α := α)
+  toProps : Exponentiation.Props mul ident
 
 attribute [instance] Exponentiation.toOps
 attribute [instance] Exponentiation.toProps
+
+local instance ofNatIdent {α : Type} [EqvOp α] {binop : α → α → α} {ident : α} [CA.Monoid.Monoid α binop ident] : OfNat α 1 := {
+  ofNat := ident
+}
+
 
 /-! ## Derived properties -/
 
 variable {ℕ : Type} [Core ℕ] [Induction.{0} ℕ]
 
+
 section general
 
 /-! ### General properties for any base type -/
 
-variable {α : Type} [EqvOp α] [CA.Monoid.Monoid α] [Exponentiation ℕ α]
+variable {α : Type} [EqvOp α]
+  {mul : (α → α → α)} {ident : α} [CA.Monoid.Monoid α mul ident]  -- ** document mul.
+  [exp_inst : Exponentiation ℕ α mul ident]
+
 
 /--
 Equivalent values can be substituted for the base (left operand) in an

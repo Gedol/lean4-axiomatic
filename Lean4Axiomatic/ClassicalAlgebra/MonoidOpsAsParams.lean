@@ -17,50 +17,39 @@ operator is a monoid.
 
 /-! ### Definitions -/
 
-/--
-Operations for Monoid, namely the binary operation and identity element.
--/
-class Ops (α : Type) where
-  binop : α → α → α
-  ident : α
-export Ops (ident binop)
-
-/-- Enables the use of the `· * ·` operator for binop. -/
-local instance monoid_mul_op_inst {α : Type} [Monoid.Ops α] : Mul α := {
-  mul := Ops.binop
-}
-
 /-- Properties of Monoid. -/
-class Props (α : Type) [EqvOp α] [Ops α] where
-  substL {x y z : α} : x ≃ y → x * z ≃ y * z
-  substR {x y z : α} : x ≃ y → z * x ≃ z * y
-  assoc {x y z : α} : (x * y) * z ≃ x * (y * z)
-  identL {x : α} : ident * x ≃ x
-  identR {x : α} : x * ident ≃ x
+class Props (α : Type) [EqvOp α]
+    (binop : semiOutParam (α → α → α)) (ident : outParam α) where
+  substL {x y z : α} : x ≃ y → binop x z ≃ binop  y z
+  substR {x y z : α} : x ≃ y → binop z x ≃ binop z y
+  assoc {x y z : α} : binop (binop x y) z ≃ binop x (binop y z)
+  identL {x : α} : binop ident x ≃ x
+  identR {x : α} : binop x ident ≃ x
 export Props (substL substR assoc identL identR)
-
-attribute [gcongr] substL substR
 
 set_option linter.dupNamespace false in
 /-- All axioms for generic types to form a Monoid. -/
-class oldMonoid (α : Type) [EqvOp α] where
-  toOps : Monoid.Ops α
-  toProps : Monoid.Props α
+class Monoid (α : Type) [EqvOp α] (binop : semiOutParam (α → α → α)) (ident : outParam α) where
+  toProps : Monoid.Props α binop ident
 
-attribute [instance] oldMonoid.toOps
-attribute [instance] oldMonoid.toProps
+attribute [instance] Monoid.toProps
 
+
+/-- Enables the use of the `· * ·` operator for binop. -/
+local instance monoid_mul_op_inst {α : Type} [EqvOp α] {binop : α → α → α} {ident : α} [Monoid α binop ident] : Mul α := {
+  mul := binop
+}
 
 /-! ### Properties -/
 
-variable {α : Type} [EqvOp α] [m : oldMonoid α]
+variable {α : Type} [EqvOp α] {binop : α → α → α} {ident : outParam α} [m : Monoid α binop ident]
 
 /-- Enables the use of `AA.substL`, `AA.substR`, etc. -/
 scoped instance monoid_subst_inst
     : AA.Substitutive₂ (α := α) (· * ·) AA.tc (· ≃ ·) (· ≃ ·)
     := {
-  substitutiveL := { subst₂ := λ (_ : True) => substL }
-  substitutiveR := { subst₂ := λ (_ : True) => substR }
+  substitutiveL := { subst₂ := λ (_ : True) => m.toProps.substL }
+  substitutiveR := { subst₂ := λ (_ : True) => m.toProps.substR }
 }
 
 /-- Enables the use of AA.assoc. -/
@@ -72,7 +61,7 @@ scoped instance monoid_assoc_inst : AA.Associative (α := α) (· * ·) := {
   There is only one element, namely the identity ident, such that
   ident * y ≃ ident for all elements y.
 -/
-theorem mul_identity_unique
+theorem identity_unique
     {x : α} (x_is_left_ident : ((y : α) → (x * y) ≃ y)) : x ≃ ident := calc
   _ ≃  x        := Rel.refl
   _ ≃ x * ident := Rel.symm identR
