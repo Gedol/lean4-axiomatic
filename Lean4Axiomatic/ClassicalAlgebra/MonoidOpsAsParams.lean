@@ -27,6 +27,7 @@ class Props (α : Type) [EqvOp α]
   identR {x : α} : binop x ident ≃ x
 export Props (substL substR assoc identL identR)
 
+set_option linter.dupNamespace false in
 /-- All axioms for generic types to form a Monoid. -/
 class Monoid (α : Type) [EqvOp α] (binop : semiOutParam (α → α → α)) (ident : outParam α) where
   toProps : Monoid.Props α binop ident
