@@ -84,7 +84,7 @@ def mul_monoid_props : CA.Monoid.Props (α := ℤ) (· * ·) 1 := {
 Integers with multiplication form a monoid.  This allow us to avoid
 reproving basic facts about integers that are true of all monoids.
 -/
-instance mul_monoid : CA.Monoid.Monoid (α := ℤ) (· * ·) 1 := {
+instance integer_mul_monoid : CA.Monoid.Monoid (α := ℤ) (· * ·) 1 := {
   toProps := mul_monoid_props
 }
 

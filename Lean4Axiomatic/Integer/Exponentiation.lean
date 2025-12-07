@@ -19,7 +19,7 @@ open Multiplication (mulOp)
 
 variable
   {ℕ ℤ : Type} [Natural ℕ] [Core (ℕ := ℕ) ℤ] [Addition ℤ] [Multiplication ℤ]
-  [Natural.Exponentiation ℕ (α := ℤ) (mul := (· * ·)) (ident := 1) (minst := mul_monoid)]
+  [Natural.Exponentiation ℕ (α := ℤ) (mul := (· * ·)) (ident := (1 : ℤ)) (minst := integer_mul_monoid)]
 
 /--
 Raising an integer to _any_ positive natural number power has no effect if

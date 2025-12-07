@@ -557,7 +557,7 @@ def mul_monoid_props : CA.Monoid.Props (α := ℕ) (· * ·) 1 := {
 Naturals numbers with multiplication form a monoid.  This allow us to avoid
 reproving basic facts about naturals that are true of all monoids.
 -/
-instance mul_monoid : CA.Monoid.Monoid (α := ℕ) (· * ·) 1 := {
+instance nat_mul_monoid : CA.Monoid.Monoid (α := ℕ) (· * ·) 1 := {
   toProps := mul_monoid_props
 }
 

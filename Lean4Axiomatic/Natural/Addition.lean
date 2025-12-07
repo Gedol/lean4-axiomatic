@@ -342,7 +342,7 @@ def add_monoid_props : CA.Monoid.Props (α := ℕ) (· + ·) 0 :=
   identL  := add_identity.identityL.ident
   identR  := add_identity.identityR.ident
 }
-
+/-
 instance add_monoid : CA.Monoid.Monoid (α := ℕ) (binop := (· + ·)) (ident := 0) := {
   toProps := add_monoid_props
 }
@@ -350,5 +350,7 @@ instance add_monoid : CA.Monoid.Monoid (α := ℕ) (binop := (· + ·)) (ident :
 example : (x : ℕ) → ((y : ℕ) → (x + y ≃ y)) → x ≃ 0 := by
   intro x x_ident_prop
   exact CA.Monoid.identity_unique (binop := (· + ·)) x_ident_prop  -- annoying that we must specify binop.
+ -/
+
 
 end Lean4Axiomatic.Natural
