@@ -1,5 +1,5 @@
 import Lean4Axiomatic.AbstractAlgebra
-import Lean4Axiomatic.ClassicalAlgebra.MonoidOpsAsParams
+import Lean4Axiomatic.ClassicalAlgebra.Monoid
 import Lean4Axiomatic.Rational.Addition
 
 open Lean4Axiomatic.Logic (AP)

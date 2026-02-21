@@ -1,5 +1,5 @@
 import Lean4Axiomatic.Natural.Core
-import Lean4Axiomatic.ClassicalAlgebra.MonoidOpsAsParams
+import Lean4Axiomatic.ClassicalAlgebra.Monoid
 
 /-!
 # Natural number addition

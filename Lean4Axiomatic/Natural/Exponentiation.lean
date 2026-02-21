@@ -76,7 +76,7 @@ section general
 
 /-! ### General properties for any base type -/
 variable {α : Type} [EqvOp α]
-  {mul : (α → α → α)} {ident : α} [CA.Monoid.Monoid α mul ident]  -- ** document mul.
+  {mul : (α → α → α)} {ident : α} [CA.Monoid.Monoid α mul ident]
   [exp_inst : Exponentiation ℕ α mul ident]
 
 /--
