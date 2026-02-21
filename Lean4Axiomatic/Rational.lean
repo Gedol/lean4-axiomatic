@@ -21,7 +21,8 @@ class Rational
   toCore : Rational.Core (ℤ := ℤ) ℚ
   toAddition : Rational.Addition ℚ
   toMultiplication : Rational.Multiplication ℚ
-  toNaturalExponentiation : Natural.Exponentiation ℕ ℚ
+  toNaturalExponentiation :
+    Natural.Exponentiation ℕ (α := ℚ) (mul := (· * ·)) (ident := (1 : ℚ))
   toNegation : Rational.Negation ℚ
   toSubtraction : Rational.Subtraction ℚ
   toReciprocation : Rational.Reciprocation ℚ

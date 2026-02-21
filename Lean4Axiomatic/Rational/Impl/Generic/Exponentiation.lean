@@ -11,7 +11,8 @@ variable
   {ℕ ℤ : Type} [Natural ℕ] [Integer (ℕ := ℕ) ℤ]
   {ℚ : Type}
     [Core (ℤ := ℤ) ℚ] [Addition ℚ] [Multiplication ℚ] [Negation ℚ]
-    [Reciprocation ℚ] [Division ℚ] [Sign ℚ] [Natural.Exponentiation ℕ ℚ]
+    [Reciprocation ℚ] [Division ℚ] [Sign ℚ]
+    [Natural.Exponentiation ℕ (α := ℚ) (mul := (· * ·)) (ident := (1 : ℚ))]
 
 /--
 Raises a nonzero rational number to an integer power, represented as the

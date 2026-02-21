@@ -1,5 +1,5 @@
 import Lean4Axiomatic.AbstractAlgebra
-import Lean4Axiomatic.ClassicalAlgebra.Monoid
+import Lean4Axiomatic.ClassicalAlgebra.MonoidOpsAsParams
 import Lean4Axiomatic.Rational.Addition
 
 open Lean4Axiomatic.Logic (AP)
@@ -213,12 +213,7 @@ integer square roots of unity are also rational square roots of unity.
 instance sqrt1_one : Sqrt1 (1 : ℚ) :=
   from_integer_preserves_sqrt1.mpr Integer.sqrt1_one
 
-local instance mul_monoid_ops :  CA.Monoid.Ops ℚ := {
-  binop := (· * ·)
-  ident := 1
-}
-
-def mul_monoid_props : CA.Monoid.Props (α := ℚ) :=
+def mul_monoid_props : CA.Monoid.Props (α := ℚ) (· * ·) 1 :=
 {
   substL  := AA.substL
   substR  := AA.substR
@@ -231,8 +226,7 @@ def mul_monoid_props : CA.Monoid.Props (α := ℚ) :=
   Rationals with multiplication form a monoid.
   TODO: Show rationals form a ring.
 -/
-instance mul_monoid : CA.Monoid.Monoid (α := ℚ) := {
-  toOps   := mul_monoid_ops
+instance mul_monoid : CA.Monoid.Monoid (α := ℚ) (· * ·) 1 := {
   toProps := mul_monoid_props
 }
 

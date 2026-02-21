@@ -24,7 +24,7 @@ variable
   {ℕ ℤ : Type} [Natural ℕ] [Integer (ℕ := ℕ) ℤ]
   {ℚ : Type}
     [Core (ℤ := ℤ) ℚ] [Addition ℚ] [Multiplication ℚ]
-    [Natural.Exponentiation ℕ ℚ]
+    [Natural.Exponentiation ℕ (α := ℚ) (mul := (· * ·)) (ident := (1 : ℚ)) (minst := mul_monoid)]
 
 /--
 Casting an integer to a rational number is left-semicompatible with natural
@@ -146,7 +146,9 @@ theorem pow_distribR_div
     := calc
   _ = (p / q)^n     := rfl
   _ ≃ (p * q⁻¹)^n   := by srw [div_mul_recip]
-  _ ≃ p^n * (q⁻¹)^n := Natural.pow_distribR_mul
+  _ ≃ p^n * (q⁻¹)^n := by
+    letI : CA.Monoid.Monoid ℚ Mul.mul 1 := mul_monoid
+    exact Natural.pow_distribR_mul
   _ ≃ p^n * (q^n)⁻¹ := by srw [←pow_scompatL_recip]
   _ ≃ p^n / q^n     := eqv_symm div_mul_recip
 
@@ -328,7 +330,9 @@ theorem sgn_diff_pow_pos
     eqv_symm mul_compat_from_integer
   have mpℚ {x y : ℤ} {k : ℕ} : (x:ℚ)^k * (y:ℚ)^k ≃ (((x * y)^k : ℤ):ℚ) := calc
     _ = (x:ℚ)^k * (y:ℚ)^k   := rfl
-    _ ≃ ((x:ℚ) * y)^k       := eqv_symm Natural.pow_distribR_mul
+    _ ≃ ((x:ℚ) * y)^k       := by
+      letI : CA.Monoid.Monoid ℚ Mul.mul 1 := mul_monoid
+      exact eqv_symm Natural.pow_distribR_mul
     _ ≃ ((x * y : ℤ):ℚ)^k   := by srw [mul_liftQ]
     _ ≃ (((x * y)^k : ℤ):ℚ) := eqv_symm pow_scompatL_from_integer
   have sub_mul_liftQ
@@ -461,7 +465,8 @@ infixr:80 " ^ " => Exponentiation.Ops._pow
 class Exponentiation.Props
     {ℕ ℤ : Type} [Natural ℕ] [Integer (ℕ := ℕ) ℤ]
     (ℚ : Type) [Core (ℤ := ℤ) ℚ] [Addition ℚ] [Multiplication ℚ]
-    [Reciprocation ℚ] [Division ℚ] [Natural.Exponentiation ℕ ℚ]
+    [Reciprocation ℚ] [Division ℚ]
+    [Natural.Exponentiation ℕ (α := ℚ) (mul := (· * ·)) (ident := (1 : ℚ)) (minst := mul_monoid)]
     [Negation ℚ] [Sign ℚ] [Ops ℚ ℤ]
     where
   /--
@@ -494,7 +499,8 @@ attribute [gcongr] pow_substR
 class Exponentiation
     {ℕ ℤ : Type} [Natural ℕ] [Integer (ℕ := ℕ) ℤ]
     (ℚ : Type) [Core (ℤ := ℤ) ℚ] [Addition ℚ] [Multiplication ℚ]
-    [Reciprocation ℚ] [Division ℚ] [Natural.Exponentiation ℕ ℚ]
+    [Reciprocation ℚ] [Division ℚ]
+    [Natural.Exponentiation ℕ (α := ℚ) (mul := (· * ·)) (ident := (1 : ℚ)) (minst := mul_monoid)]
     [Negation ℚ] [Sign ℚ]
     where
   toOps : Exponentiation.Ops ℚ ℤ
@@ -510,7 +516,8 @@ variable
   {ℚ : Type}
     [Core (ℤ := ℤ) ℚ] [Addition ℚ] [Multiplication ℚ] [Negation ℚ]
     [Reciprocation ℚ] [Division ℚ] [Sign ℚ]
-    [Natural.Exponentiation ℕ ℚ] [Exponentiation ℚ]
+    [Natural.Exponentiation ℕ (α := ℚ) (mul := (· * ·)) (ident := (1 : ℚ)) (minst := mul_monoid)]
+    [Exponentiation ℚ]
 
 /--
 Rational number exponentiation to an integer respects equivalence of the base
@@ -770,6 +777,9 @@ convert back to integer exponents to obtain the goal.
 theorem pow_distribR_mul
     {p q : ℚ} [AP (p ≄ 0)] [AP (q ≄ 0)] {a : ℤ} : (p * q)^a ≃ p^a * q^a
     := by
+  -- Bridge the eta mismatch locally: `mul_monoid` is for `(· * ·)` but
+  -- `Natural.pow_distribR_mul` unifies `mul` to `Mul.mul` (eta-reduced).
+  letI : CA.Monoid.Monoid ℚ Mul.mul 1 := mul_monoid
   have Exists.intro (n : ℕ) (Exists.intro (m : ℕ) (a_eqv : a ≃ n - m)) :=
     Integer.as_diff a
 

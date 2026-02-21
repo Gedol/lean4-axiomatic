@@ -89,6 +89,15 @@ instance integer_mul_monoid : CA.Monoid.Monoid (α := ℤ) (· * ·) 1 := {
 }
 
 /--
+Bridge instance: `(· * ·)` and `Mul.mul` are definitionally equal (eta), but
+Lean's instance search can't unify them. This alias ensures the monoid is found
+when implicit parameters are resolved as `Mul.mul` (e.g. reverse rewrites with
+`Natural.pow_two`).
+-/
+instance integer_mul_monoid_eta : CA.Monoid.Monoid (α := ℤ) Mul.mul 1 :=
+  integer_mul_monoid
+
+/--
 Non-typeclass version of `mul_substitutive.substitutiveL`.
 
 Eventually, this should become the axiom and the typeclass should be derived.
