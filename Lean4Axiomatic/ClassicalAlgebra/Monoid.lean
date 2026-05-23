@@ -33,11 +33,6 @@ set_option linter.dupNamespace false in
 class Monoid (α : Type) [EqvOp α] (binop : semiOutParam (α → α → α)) (ident : outParam α) where
   toProps : Monoid.Props α binop ident
 
-
-class testOfMonoid
-  (α : semiOutParam Type) [EqvOp α] (mul : semiOutParam (α → α → α)) (ident : outParam α) [Monoid α mul ident] where
-  tempField : α
-
 attribute [instance] Monoid.toProps
 
 
