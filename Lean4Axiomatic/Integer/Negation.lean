@@ -33,7 +33,7 @@ class Negation
   /-- An integer added to its negation is always zero. -/
   neg_inverse : AA.Inverse (α := ℤ) (-·) (· + ·)
 
-attribute [instance] Negation.negOp
+attribute [implicit_reducible, instance] Negation.negOp
 attribute [instance] Negation.neg_inverse
 attribute [instance] Negation.neg_substitutive
 
@@ -158,8 +158,8 @@ Useful when working with chains of `· ↔ ·` relations.
 **Property and proof intuition**: Combines left substitution and left
 cancellation of addition.
 -/
-theorem add_bijectL {a b₁ b₂ : ℤ} : b₁ ≃ b₂ ↔ a + b₁ ≃ a + b₂ :=
-  Iff.intro add_substR add_cancelL
+theorem add_injectL {a b₁ b₂ : ℤ} : a + b₁ ≃ a + b₂ ↔ b₁ ≃ b₂ :=
+  Iff.intro add_cancelL add_substR
 
 /--
 Add or remove a right operand to addition on both sides of an equivalence.
@@ -169,8 +169,8 @@ Useful when working with chains of `· ↔ ·` relations.
 **Property and proof intuition**: Combines right substitution and right
 cancellation of addition.
 -/
-theorem add_bijectR {a₁ a₂ b : ℤ} : a₁ ≃ a₂ ↔ a₁ + b ≃ a₂ + b :=
-  Iff.intro add_substL add_cancelR
+theorem add_injectR {a₁ a₂ b : ℤ} : a₁ + b ≃ a₂ + b ↔ a₁ ≃ a₂ :=
+  Iff.intro add_cancelR add_substL
 
 variable [Multiplication ℤ]
 
@@ -292,6 +292,14 @@ theorem neg_scompatL_mul {a b : ℤ} : -(a * b) ≃ (-a) * b := calc
   _ ≃ (-a) * b + 0                  := by srw [neg_invR]
   _ ≃ (-a) * b                      := AA.identR
 
+/-- Negation is right-semicompatible with multiplication. -/
+theorem neg_scompatR_mul {a b : ℤ} : -(a * b) ≃ a * (-b) := calc
+  _ = -(a * b) := rfl
+  _ ≃ -(b * a) := by srw [AA.comm]
+  _ ≃ (-b) * a := neg_scompatL_mul
+  _ ≃ a * (-b) := AA.comm
+
+@[implicit_reducible]
 def neg_semicompatibleL_mul
     : AA.SemicompatibleOn Hand.L (α := ℤ) (-·) (· * ·)
     := {

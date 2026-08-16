@@ -350,6 +350,7 @@ Equivalence relation of "if and only if" over propositions.
 **Intuition**: Two propositions `p` and `q` have the same truth value if
 `p ↔ q` holds between them.
 -/
+@[implicit_reducible]
 def eqvOp_prop : EqvOp Prop := {
   tildeDash := (· ↔ ·)
   refl := Iff.rfl
@@ -365,6 +366,7 @@ each other. This is known as _proof irrelevance_: Lean considers all proofs of
 a proposition to be equal. Most of the time this is what we want, and makes
 working with propositions much easier.
 -/
+@[implicit_reducible]
 def eqvOp_prop_term {p : Prop} : EqvOp p := {
   tildeDash := (· = ·)
   refl := rfl

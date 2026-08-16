@@ -22,11 +22,13 @@ local instance order_ops : Order.Ops ℚ := {
   lt := lt
 }
 
+@[implicit_reducible]
 def order_props : Order.Props ℚ := {
   le_sgn := Iff.intro id id
   lt_sgn := Iff.intro id id
 }
 
+@[implicit_reducible]
 def order : Order ℚ := {
   toOps := order_ops
   toProps := order_props

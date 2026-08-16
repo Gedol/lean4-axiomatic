@@ -23,10 +23,12 @@ local instance metric_ops : Metric.Ops ℤ := {
   _dist := _dist
 }
 
+@[implicit_reducible]
 def metric_props : Metric.Props ℤ := {
   abs_sgn := Rel.refl
 }
 
+@[implicit_reducible]
 def metric : Metric ℤ := {
   toOps := metric_ops
   toProps := metric_props

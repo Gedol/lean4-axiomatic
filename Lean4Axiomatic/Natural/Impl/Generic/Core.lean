@@ -18,10 +18,12 @@ def fromNat : Nat → ℕ
 | 0 => zero
 | n+1 => step (fromNat n)
 
+@[implicit_reducible]
 def ofNat {n : Nat} : OfNat ℕ n := {
   ofNat := fromNat n
 }
 
+@[implicit_reducible]
 def literals : Literals ℕ := {
   literal := ofNat
   literal_zero := Rel.refl

@@ -10,7 +10,7 @@ derived properties.
 
 namespace Lean4Axiomatic.Integer
 
-open Logic (AP iff_subst_covar or_mapL or_mapR)
+open Logic (AP and_merge iff_subst_covar or_mapL or_mapR)
 open Natural (step)
 open Signed (Positive)
 open Multiplication (mulOp)
@@ -70,6 +70,21 @@ theorem cube_splitL {a : ℤ} : a^3 ≃ a * a^2 := calc
   _ ≃ a^(step 2) := by srw [Natural.literal_step]
   _ ≃ a^2 * a    := Natural.pow_step
   _ ≃ a * a^2    := AA.comm
+
+/-- Expand an integer binomial's square. -/
+theorem binom_sqr {a b : ℤ} : (a + b)^2 ≃ a^2 + 2 * a * b + b^2 := calc
+  _ = (a + b)^2                         := rfl
+  _ ≃ (a + b) * (a + b)                 := Natural.pow_two
+  _ ≃ a * (a + b) + b * (a + b)         := AA.distribR
+  _ ≃ (a * a + a * b) + b * (a + b)     := by srw [mul_distribL]
+  _ ≃ (a * a + a * b) + (b * a + b * b) := by srw [mul_distribL]
+  _ ≃ (a * a + a * b) + (a * b + b * b) := by srw [AA.comm]
+  _ ≃ ((a * a + a * b) + a * b) + b * b := Rel.symm AA.assoc
+  _ ≃ a * a + (a * b + a * b) + b * b   := by srw [AA.assoc]
+  _ ≃ a * a + 2 * (a * b) + b * b       := by srw [←mul_two]
+  _ ≃ a * a + 2 * a * b + b * b         := by srw [←AA.assoc]
+  _ ≃ a^2 + 2 * a * b + b * b           := by srw [←Natural.pow_two]
+  _ ≃ a^2 + 2 * a * b + b^2             := by srw [←Natural.pow_two]
 
 variable [Negation ℤ]
 
@@ -221,7 +236,7 @@ with multiplication (`sgn (a * b) ≃ sgn a * sgn b`) and repeatedly apply it to
 the product formed by `a^n`.
 -/
 theorem sgn_pow {a : ℤ} {n : ℕ} : sgn (a^n) ≃ (sgn a)^n := by
-  apply Natural.ind_on n
+  apply Natural.ind_on.{0} n
   case zero =>
     show sgn (a^0) ≃ (sgn a)^0
     calc
@@ -239,9 +254,65 @@ theorem sgn_pow {a : ℤ} {n : ℕ} : sgn (a^n) ≃ (sgn a)^n := by
       _ ≃ (sgn a)^n' * sgn a := by srw [ih]
       _ ≃ (sgn a)^(step n')  := Rel.symm Natural.pow_step
 
+/-- A positive integer raised to a natural number power is still positive. -/
+theorem sgn_pow_preserves_pos {a : ℤ} {n : ℕ} : sgn a ≃ 1 → sgn (a^n) ≃ 1 := by
+  intro (_ : sgn a ≃ 1)
+  show sgn (a^n) ≃ 1
+
+  calc
+    _ = sgn (a^n) := rfl
+    _ ≃ (sgn a)^n := sgn_pow
+    _ ≃ 1^n       := by srw [‹sgn a ≃ 1›]
+    _ ≃ 1         := Natural.pow_absorbL
+
 end sign_only
 
-variable [Subtraction ℤ] [Sign ℤ]
+variable [Subtraction ℤ]
+
+/-- Factor the difference of two integer cubes. -/
+theorem diff_cubes {a b : ℤ} : a^3 - b^3 ≃ (a - b) * (a^2 + a * b + b^2) :=
+  let three_term := a^2 + a * b + b^2
+  let two_term := a^2 * b + a * b^2
+
+  have expand_a : a * three_term ≃ a^3 + two_term := calc
+    _ = a * three_term                  := rfl
+    _ = a * (a^2 + a * b + b^2)         := rfl
+    _ ≃ a * (a^2 + a * b) + a * b^2     := mul_distribL
+    _ ≃ a * a^2 + a * (a * b) + a * b^2 := by srw [mul_distribL]
+    _ ≃ a^3 + a * (a * b) + a * b^2     := by srw [←cube_splitL]
+    _ ≃ a^3 + a * a * b + a * b^2       := by srw [←AA.assoc]
+    _ ≃ a^3 + a^2 * b + a * b^2         := by srw [←Natural.pow_two]
+    _ ≃ a^3 + (a^2 * b + a * b^2)       := AA.assoc
+    _ = a^3 + two_term                  := rfl
+  have expand_b : -b * three_term ≃ -two_term + -b^3 := calc
+    _ = -b * three_term                    := rfl
+    _ = -b * (a^2 + a * b + b^2)           := rfl
+    _ ≃ -b * (a^2 + a * b) + -b * b^2      := by srw [mul_distribL]
+    _ ≃ -b * (a^2 + a * b) + -(b * b^2)    := by srw [←AA.scompatL]
+    _ ≃ -b * (a^2 + a * b) + -b^3          := by srw [←cube_splitL]
+    _ ≃ -b * a^2 + -b * (a * b) + -b^3     := by srw [mul_distribL]
+    _ ≃ -(b * a^2) + -b * (a * b) + -b^3   := by srw [←AA.scompatL]
+    _ ≃ -(a^2 * b) + -b * (a * b) + -b^3   := by srw [AA.comm]
+    _ ≃ -(a^2 * b) + -(b * (a * b)) + -b^3 := by srw [←AA.scompatL]
+    _ ≃ -(a^2 * b) + -(a * b * b) + -b^3   := by srw [AA.comm]
+    _ ≃ -(a^2 * b) + -(a * (b * b)) + -b^3 := by srw [AA.assoc]
+    _ ≃ -(a^2 * b) + -(a * b^2) + -b^3     := by srw [←Natural.pow_two]
+    _ ≃ -(a^2 * b + a * b^2) + -b^3        := by srw [←neg_compat_add]
+    _ = -two_term + -b^3                   := rfl
+
+  Rel.symm $ calc
+    _ = (a - b) * (a^2 + a * b + b^2)       := rfl
+    _ = (a - b) * three_term                := rfl
+    _ ≃ (a + -b) * three_term               := by srw [sub_defn]
+    _ ≃ a * three_term + -b * three_term    := mul_distribR
+    _ ≃ a^3 + two_term + -b * three_term    := by srw [expand_a]
+    _ ≃ a^3 + two_term + (-two_term + -b^3) := by srw [expand_b]
+    _ ≃ a^3 + -b^3 + (-two_term + two_term) := AA.expr_xxfxxff_lr_swap_rr
+    _ ≃ a^3 + -b^3 + 0                      := by srw [neg_invL]
+    _ ≃ a^3 + -b^3                          := AA.identR
+    _ ≃ a^3 - b^3                           := Rel.symm sub_defn
+
+variable [Sign ℤ]
 
 /--
 Zero and one are the only integers that are identical to their squares.
@@ -346,6 +417,16 @@ theorem sqr_nonneg {a : ℤ} : a^2 ≥ 0 := by
     _ ≃ a * a := Natural.pow_two
     _ ≥ 0     := ge_zero_sgn.mpr ‹sgn (a * a) ≄ -1›
 
+/-- The nonzero integers are exactly those whose sign squared is one. -/
+theorem sgn_sqr_nonzero {a : ℤ} : (sgn a)^2 ≃ 1 ↔ a ≄ 0 := calc
+  _ ↔ (sgn a)^2 ≃ 1 := Iff.rfl
+  _ ↔ sgn (a^2) ≃ 1 := by srw [←sgn_pow]
+  _ ↔ a^2 > 0       := gt_zero_sgn.symm
+  _ ↔ a^2 ≄ 0       := Iff.intro gt_neqv (gt_from_ge_neqv sqr_nonneg)
+  _ ↔ a * a ≄ 0     := by srw [Natural.pow_two]
+  _ ↔ a ≄ 0 ∧ a ≄ 0 := mul_split_neqv_zero
+  _ ↔ a ≄ 0         := and_merge
+
 /--
 Squaring the sign of an integer leaves it the same iff the integer is
 nonnegative.
@@ -356,10 +437,43 @@ and those are the two sign values of nonnegative integers.
 theorem sgn_sqr_nonneg {a : ℤ} : (sgn a)^2 ≃ sgn a ↔ a ≥ 0 := calc
   _ ↔ (sgn a)^2 ≃ sgn a     := Iff.rfl
   _ ↔ sgn a ≃ 0 ∨ sgn a ≃ 1 := sqr_idemp_reasons
-  _ ↔ a ≃ 0 ∨ sgn a ≃ 1     := iff_subst_covar or_mapL sgn_zero.symm
+  _ ↔ a ≃ 0 ∨ sgn a ≃ 1     := iff_subst_covar or_mapL sgn_zero
   _ ↔ a ≃ 0 ∨ a > 0         := iff_subst_covar or_mapR gt_zero_sgn.symm
   _ ↔ a > 0 ∨ a ≃ 0         := Or.comm
   _ ↔ a ≥ 0                 := ge_split.symm
+
+/--
+Squaring the sign of an integer difference leaves it unchanged exactly when the
+first operand of the difference is _greater than or equivalent to_ the second.
+-/
+theorem sgn_diff_sqr_ge {a b : ℤ} : (sgn (a - b))^2 ≃ sgn (a - b) ↔ a ≥ b :=
+  calc
+    _ ↔ (sgn (a - b))^2 ≃ sgn (a - b) := Iff.rfl
+    _ ↔ a - b ≥ 0                     := sgn_sqr_nonneg
+    _ ↔ a ≥ b                         := ge_iff_diff_nonneg.symm
+
+/--
+A positive right factor can be removed from both sides of a _less than or
+equivalent to_ relation on integers.
+-/
+theorem mul_cancelR_le {a b c : ℤ} : c > 0 → a * c ≤ b * c → a ≤ b := by
+  intro (_ : c > 0) (_ : a * c ≤ b * c)
+  show a ≤ b
+
+  have : sgn (b * c - a * c) ≃ sgn (b - a) := calc
+    _ = sgn (b * c - a * c) := rfl
+    _ ≃ sgn ((b - a) * c)   := by srw [←mul_distribR_sub]
+    _ ≃ sgn (b - a) * sgn c := sgn_compat_mul
+    _ ≃ sgn (b - a) * 1     := by srw [gt_zero_sgn.mp ‹c > 0›]
+    _ ≃ sgn (b - a)         := AA.identR
+  have : (sgn (b - a))^2 ≃ sgn (b - a) := calc
+    _ = (sgn (b - a))^2         := rfl
+    _ ≃ (sgn (b * c - a * c))^2 := by srw [←‹sgn (b * c - a * c) ≃ sgn (b - a)›]
+    _ ≃ sgn (b * c - a * c)     := sgn_diff_sqr_ge.mpr ‹b * c ≥ a * c›
+    _ ≃ sgn (b - a)             := ‹sgn (b * c - a * c) ≃ sgn (b - a)›
+
+  have : a ≤ b := sgn_diff_sqr_ge.mp ‹(sgn (b - a))^2 ≃ sgn (b - a)›
+  exact this
 
 /--
 Squaring preserves the relative ordering of nonnegative integers.
@@ -394,7 +508,7 @@ theorem sgn_diff_sqr
       (zero_sum_split ‹a ≥ 0› ‹b ≥ 0›).mp ‹a + b ≃ 0›
     have : a ≃ b := Rel.trans ‹a ≃ 0› (Rel.symm ‹b ≃ 0›)
     have : a - b ≃ 0 := zero_diff_iff_eqv.mpr ‹a ≃ b›
-    have : sgn (a - b) ≃ 0 := sgn_zero.mp ‹a - b ≃ 0›
+    have : sgn (a - b) ≃ 0 := sgn_zero.mpr ‹a - b ≃ 0›
     Or.inl ‹sgn (a - b) ≃ 0›
   calc
     _ = sgn (a^2 - b^2)           := rfl
@@ -446,7 +560,7 @@ theorem sgn_sum
       _ ≃ sa + sb - (sa * sb) * sb     := by srw [←AA.assoc]
       _ ≃ sa + sb - (sgn (a * b)) * sb := by srw [←sgn_compat_mul]
       _ ≃ sa + sb - (sgn (0:ℤ)) * sb   := by srw [‹a * b ≃ 0›]
-      _ ≃ sa + sb - 0 * sb             := by srw [sgn_zero.mp Rel.refl]
+      _ ≃ sa + sb - 0 * sb             := by srw [sgn_zero.mpr Rel.refl]
       _ ≃ sa + sb - 0                  := by srw [mul_absorbL]
       _ ≃ sa + sb                      := sub_identR
       _ ≃ sgn (a + b)                  := Rel.symm ‹sgn (a + b) ≃ sa + sb›
@@ -578,9 +692,9 @@ theorem sgn_diff_pow
       _ ≃ sgn (1 - b^0)               := by srw [Natural.pow_zero]
       _ ≃ sgn ((1:ℤ) - 1)             := by srw [Natural.pow_zero]
       _ ≃ sgn (0:ℤ)                   := by srw [sub_same]
-      _ ≃ 0                           := sgn_zero.mp Rel.refl
+      _ ≃ 0                           := sgn_zero.mpr Rel.refl
       _ ≃ sgn (a - b) * 0             := Rel.symm AA.absorbR
-      _ ≃ sgn (a - b) * sgn (0:ℤ)     := by srw [←sgn_zero.mp Rel.refl]
+      _ ≃ sgn (a - b) * sgn (0:ℤ)     := by srw [←sgn_zero.mpr Rel.refl]
       _ = sgn (a - b) * sgn ((0:ℕ):ℤ) := rfl
       _ ≃ sgn (a - b) * sgn (n:ℤ)     := by srw [←‹n ≃ 0›]
   | Or.inr (_ : n > 0) =>
@@ -593,5 +707,221 @@ theorem sgn_diff_pow
       _ ≃ sgn (a - b)             := sgn_diff_pow_pos ‹a ≥ 0› ‹b ≥ 0› ‹n ≥ 1›
       _ ≃ sgn (a - b) * 1         := Rel.symm AA.identR
       _ ≃ sgn (a - b) * sgn (n:ℤ) := by srw [←‹sgn (n:ℤ) ≃ 1›]
+
+/-- The cubic function `x^3 - x` is nondecreasing on positive integers. -/
+theorem le_cube_subst {s t : ℤ} : 0 < s → s ≤ t → s^3 - s ≤ t^3 - t := by
+  intro (_ : 0 < s) (_ : s ≤ t)
+  show s^3 - s ≤ t^3 - t
+
+  have : (sgn (t^3 - t - (s^3 - s)))^2 ≃ sgn (t^3 - t - (s^3 - s)) := by
+    have factor : t^3 - t - (s^3 - s) ≃ (t - s) * (t^2 + t * s + s^2 - 1) :=
+      have swap {w x y z : ℤ} : w + x + (y + z) ≃ w + z + (y + x) :=
+        AA.expr_xxfxxff_lr_swap_rr
+      calc
+        _ = t^3 - t - (s^3 - s)                      := rfl
+        _ ≃ t^3 + -t - (s^3 - s)                     := by srw [sub_defn]
+        _ ≃ t^3 + -t + -(s^3 - s)                    := by srw [sub_defn]
+        _ ≃ t^3 + -t + (s - s^3)                     := by srw [sub_neg_flip]
+        _ ≃ t^3 + -t + (s + -s^3)                    := by srw [sub_defn]
+        _ ≃ t^3 + -s^3 + (s + -t)                    := by srw [swap]
+        _ ≃ t^3 - s^3 + (s + -t)                     := by srw [←sub_defn]
+        _ ≃ t^3 - s^3 + (s-t)                        := by srw [←sub_defn]
+        _ ≃ (t-s) * (t^2 + t * s + s^2) + (s-t)      := by srw [diff_cubes]
+        _ ≃ (t-s) * (t^2 + t * s + s^2) + -(t-s)     := by srw [←sub_neg_flip]
+        _ ≃ (t-s) * (t^2 + t * s + s^2) + -1 * (t-s) := by srw [←mul_neg_one]
+        _ ≃ (t-s) * (t^2 + t * s + s^2) + (t-s) * -1 := by srw [AA.comm]
+        _ ≃ (t-s) * (t^2 + t * s + s^2 + -1)         := by srw [←mul_distribL]
+        _ ≃ (t-s) * (t^2 + t * s + s^2 - 1)          := by srw [←sub_defn]
+
+    have ts_diff_drop_sqr : (sgn (t - s))^2 ≃ sgn (t - s) :=
+      sgn_diff_sqr_ge.mpr ‹t ≥ s›
+
+    let ts_quad := t^2 + t * s + s^2 - 1
+    have ts_quad_drop_sqr : (sgn ts_quad)^2 ≃ sgn ts_quad :=
+      have : sgn (t^2 + s^2 + (t * s - 1)) ≃ 1 :=
+        have : t > 0 := trans ‹t ≥ s› ‹s > 0›
+
+        have : sgn (t^2 + s^2) ≃ 1 :=
+          have : sgn s ≃ 1 := gt_zero_sgn.mp ‹s > 0›
+          have : sgn t ≃ 1 := gt_zero_sgn.mp ‹t > 0›
+          have : sgn (t^2) ≃ 1 := sgn_pow_preserves_pos ‹sgn t ≃ 1›
+          have : sgn (s^2) ≃ 1 := sgn_pow_preserves_pos ‹sgn s ≃ 1›
+          have : sgn (t^2 * s^2) ≃ 1 := calc
+            _ = sgn (t^2 * s^2)       := rfl
+            _ ≃ sgn (t^2) * sgn (s^2) := sgn_compat_mul
+            _ ≃ 1 * sgn (s^2)         := by srw [‹sgn (t^2) ≃ 1›]
+            _ ≃ sgn (s^2)             := AA.identL
+            _ ≃ 1                     := ‹sgn (s^2) ≃ 1›
+          have : t^2 * s^2 > 0 := gt_zero_sgn.mpr ‹sgn (t^2 * s^2) ≃ 1›
+          have : t^2 * s^2 ≥ 0 := ge_split.mpr (Or.inl ‹t^2 * s^2 > 0›)
+          let sse (x y : ℤ) := sum_sub_err x y
+          calc
+            _ = sgn (t^2 + s^2)             := rfl
+            _ ≃ sse (sgn (t^2)) (sgn (s^2)) := sgn_sum ‹t^2 * s^2 ≥ 0›
+            _ ≃ sse 1 (sgn (s^2))           := by srw [‹sgn (t^2) ≃ 1›]
+            _ ≃ sse 1 1                     := by srw [‹sgn (s^2) ≃ 1›]
+            _ = 1 + 1 - 1 * 1^2             := rfl
+            _ ≃ 1 + 1 - 1^2                 := by srw [mul_identL]
+            _ ≃ 1 + 1 - 1                   := by srw [Natural.pow_absorbL]
+            _ ≃ 1 + (1 - 1)                 := sub_assoc_addL
+            _ ≃ 1 + 0                       := by srw [sub_same]
+            _ ≃ 1                           := AA.identR
+
+        let ts1 := t * s - 1
+        have : ts1 * (t^2 + s^2) ≥ 0 :=
+          have : s ≥ 0 := le_split.mpr (Or.inl ‹s > 0›)
+          have : t * s ≥ 1 := calc
+            _ = t * s := rfl
+            _ ≥ 1 * s := by srw [pos_gt_iff_ge.mp ‹t > 0›] -- uses s ≥ 0
+            _ ≃ s     := AA.identL
+            _ ≥ 1     := pos_gt_iff_ge.mp ‹s > 0›
+          have ts_sub_1_drop_sqr : (sgn ts1)^2 ≃ sgn ts1 :=
+            sgn_diff_sqr_ge.mpr ‹t * s ≥ 1›
+          have ts_terms_drop_sqr
+              : (sgn (ts1 * (t^2 + s^2)))^2 ≃ sgn (ts1 * (t^2 + s^2))
+              := calc
+            _ = (sgn (ts1 * (t^2 + s^2)))^2   := rfl
+            _ ≃ (sgn ts1 * sgn (t^2 + s^2))^2 := by srw [sgn_compat_mul]
+            _ ≃ (sgn ts1 * 1)^2               := by srw [‹sgn (t^2 + s^2) ≃ 1›]
+            _ ≃ (sgn ts1)^2                   := by srw [mul_identR]
+            _ ≃ sgn ts1                       := ts_sub_1_drop_sqr
+            _ ≃ sgn ts1 * 1                   := Rel.symm mul_identR
+            _ ≃ sgn ts1 * sgn (t^2 + s^2)     := by srw [←‹sgn (t^2 + s^2) ≃ 1›]
+            _ ≃ sgn (ts1 * (t^2 + s^2))       := by srw [←sgn_compat_mul]
+          show ts1 * (t^2 + s^2) ≥ 0 from sgn_sqr_nonneg.mp ts_terms_drop_sqr
+
+        let sts1 := sgn ts1
+        calc
+          _ = sgn (t^2 + s^2 + ts1)            := rfl
+          _ ≃ sgn (ts1 + (t^2 + s^2))          := by srw [AA.comm]
+          _ ≃ sum_sub_err sts1 (sgn (t^2+s^2)) := sgn_sum ‹ts1 * (t^2+s^2) ≥ 0›
+          _ ≃ sum_sub_err sts1 1               := by srw [‹sgn (t^2+s^2) ≃ 1›]
+          _ = sts1 + 1 - sts1 * 1^2            := rfl
+          _ ≃ 1 + sts1 - sts1 * 1^2            := by srw [AA.comm]
+          _ ≃ 1 + sts1 - sts1 * 1              := by srw [Natural.pow_absorbL]
+          _ ≃ 1 + sts1 - sts1                  := by srw [mul_identR]
+          _ ≃ 1 + (sts1 - sts1)                := sub_assoc_addL
+          _ ≃ 1 + 0                            := by srw [sub_same]
+          _ ≃ 1                                := AA.identR
+
+      have : sgn ts_quad ≃ 1 := calc
+        _ = sgn ts_quad                  := rfl
+        _ = sgn (t^2 + t*s + s^2 - 1)    := rfl
+        _ ≃ sgn (t^2 + t*s + s^2 + -1)   := by srw [sub_defn]
+        _ ≃ sgn (t^2 + t*s + (s^2 + -1)) := by srw [AA.assoc]
+        _ ≃ sgn (t^2 + s^2 + (t*s + -1)) := by srw [AA.expr_xxfxxff_lr_swap_rl]
+        _ ≃ sgn (t^2 + s^2 + (t*s - 1))  := by srw [←sub_defn]
+        _ ≃ 1                            := ‹sgn (t^2 + s^2 + (t * s - 1)) ≃ 1›
+      have : ts_quad > 0 := gt_zero_sgn.mpr ‹sgn ts_quad ≃ 1›
+      have : ts_quad ≥ 0 := le_split.mpr (Or.inl ‹ts_quad > 0›)
+      show (sgn ts_quad)^2 ≃ sgn ts_quad from sgn_sqr_nonneg.mpr ‹ts_quad ≥ 0›
+
+    calc
+      _ = (sgn (t^3 - t - (s^3 - s)))^2     := rfl
+      _ ≃ (sgn ((t - s) * ts_quad))^2       := by srw [factor]
+      _ ≃ (sgn (t - s) * sgn ts_quad)^2     := by srw [sgn_compat_mul]
+      _ ≃ (sgn (t - s))^2 * (sgn ts_quad)^2 := by srw [Natural.pow_distribR_mul]
+      _ ≃ sgn (t - s) * (sgn ts_quad)^2     := by srw [ts_diff_drop_sqr]
+      _ ≃ sgn (t - s) * sgn ts_quad         := by srw [ts_quad_drop_sqr]
+      _ ≃ sgn ((t - s) * ts_quad)           := by srw [←sgn_compat_mul]
+      _ ≃ sgn (t^3 - t - (s^3 - s))         := by srw [←factor]
+  have : t^3 - t ≥ s^3 - s :=
+    sgn_diff_sqr_ge.mp ‹(sgn (t^3-t - (s^3-s)))^2 ≃ sgn (t^3-t - (s^3-s))›
+  exact this
+
+/-- All natural numbers with at least one `step` have a positive sign. -/
+theorem sgn_step {n : ℕ} : sgn (step n : ℤ) ≃ 1 := by
+  apply Natural.ind_on.{0} n
+  case zero =>
+    calc
+      _ = sgn (step 0 : ℤ) := rfl
+      _ ≃ sgn ((1:ℕ):ℤ)    := by srw [←Natural.literal_step]
+      _ = sgn (1:ℤ)        := rfl
+      _ ≃ 1                := sgn_positive.mp one_positive
+  case step =>
+    intro (m : ℕ)
+    let m' := step m
+    intro (ih : sgn (m':ℤ) ≃ 1)
+    show sgn (step m' : ℤ) ≃ 1
+
+    have : m' * (1:ℤ) > 0 := calc
+      _ = m' * (1:ℤ) := rfl
+      _ ≃ m'         := AA.identR
+      _ > 0          := gt_zero_sgn.mpr ‹sgn (m':ℤ) ≃ 1›
+    have : m' * (1:ℤ) ≥ 0 := ge_split.mpr (Or.inl ‹m' * (1:ℤ) > 0›)
+    have : sgn (1:ℤ) ≃ 1 := sgn_positive.mp one_positive
+    have : (1:ℤ)^3 ≃ 1 := Natural.pow_absorbL
+    calc
+      _ = sgn (step m' : ℤ)                    := rfl
+      _ ≃ sgn ((m' + 1 : ℕ):ℤ)                 := by srw [←Natural.add_one_step]
+      _ ≃ sgn ((m':ℤ) + ((1:ℕ):ℤ))             := by srw [add_compat_nat]
+      _ ≃ sum_sub_err (sgn (m':ℤ)) (sgn (1:ℤ)) := sgn_sum ‹(m':ℤ) * (1:ℤ) ≥ 0›
+      _ ≃ sum_sub_err 1 (sgn (1:ℤ))            := by srw [‹sgn (m':ℤ) ≃ 1›]
+      _ ≃ sum_sub_err 1 1                      := by srw [‹sgn (1:ℤ) ≃ 1›]
+      _ ≃ 1                                    := sse_same ‹(1:ℤ)^3 ≃ 1›
+
+/-- An integer's sign is at most one. -/
+theorem sgn_max {a : ℤ} : sgn a ≤ 1 :=
+  have cube_bound {s : ℤ} : s^3 ≃ s → s ≤ 1 := by
+    intro (_ : s^3 ≃ s)
+    show s ≤ 1
+
+    have : ¬(s ≥ 2) := λ (_ : s ≥ 2) =>
+      have : (2:ℤ)^3 - 2 ≃ 6 := calc
+        _ = (2:ℤ)^3 - 2                   := rfl
+        _ ≃ 2 * 2^2 - 2                   := by srw [cube_splitL]
+        _ ≃ 2 * 2^2 - 2 * 1               := by srw [←mul_identR]
+        _ ≃ 2 * (2^2 - 1)                 := Rel.symm AA.distribL
+        _ ≃ 2 * (2^2 - 1^2)               := by srw [←Natural.pow_absorbL]
+        _ ≃ 2 * ((2 - 1) * (2 + 1))       := by srw [factor_diff_sqr]
+        _ ≃ 2 * ((1 + 1 - 1) * (2 + 1))   := by srw [←add_one_one]
+        _ ≃ 2 * ((1 + (1 - 1)) * (2 + 1)) := by srw [sub_assoc_addL]
+        _ ≃ 2 * ((1 + 0) * (2 + 1))       := by srw [sub_same]
+        _ ≃ 2 * (1 * (2 + 1))             := by srw [add_identR]
+        _ ≃ 2 * (2 + 1)                   := by srw [mul_identL]
+        _ = 2 * ((2:ℕ) + (1:ℕ))           := rfl
+        _ ≃ 2 * ((2 + 1 : ℕ):ℤ)           := by srw [←add_compat_nat]
+        _ ≃ 2 * step 2                    := by srw [Natural.add_one_step]
+        _ ≃ step 2 + step 2               := mul_two
+        _ ≃ ((3:ℕ):ℤ) + step 2            := by srw [←Natural.literal_step]
+        _ = ((3:ℕ):ℤ) + (step 2 : ℤ)      := rfl
+        _ ≃ ((3 + step 2 : ℕ):ℤ)          := Rel.symm add_compat_nat
+        _ ≃ ((step 3 + 2 : ℕ):ℤ)          := by srw [←Natural.step_add_swap]
+        _ ≃ ((4 + 2 : ℕ):ℤ)               := by srw [←Natural.literal_step]
+        _ ≃ ((4 + step 1 : ℕ):ℤ)          := by srw [Natural.literal_step]
+        _ ≃ ((step 4 + 1 : ℕ):ℤ)          := by srw [←Natural.step_add_swap]
+        _ ≃ ((5 + 1 : ℕ):ℤ)               := by srw [←Natural.literal_step]
+        _ ≃ ((step 5 : ℕ):ℤ)              := by srw [Natural.add_one_step]
+        _ ≃ ((6:ℕ):ℤ)                     := by srw [←Natural.literal_step]
+        _ = 6                             := rfl
+
+      have : sgn (2:ℤ) ≃ 1 := calc
+        _ = sgn (2:ℤ)            := rfl
+        _ = sgn ((2:ℕ):ℤ)        := rfl
+        _ ≃ sgn ((step 1 : ℕ):ℤ) := by srw [Natural.literal_step]
+        _ ≃ 1                    := sgn_step
+      have : (2:ℤ) > 0 := gt_zero_sgn.mpr ‹sgn (2:ℤ) ≃ 1›
+      have : sgn (6:ℤ) ≃ 1 := calc
+        _ = sgn (6:ℤ)            := rfl
+        _ = sgn ((6:ℕ):ℤ)        := rfl
+        _ ≃ sgn ((step 5 : ℕ):ℤ) := by srw [Natural.literal_step]
+        _ ≃ 1                    := sgn_step
+      have : (6:ℤ) > 0 := gt_zero_sgn.mpr ‹sgn (6:ℤ) ≃ 1›
+
+      have : (6:ℤ) ≤ 0 := calc
+        _ = (6:ℤ)   := rfl
+        _ ≃ 2^3 - 2 := Rel.symm ‹(2:ℤ)^3 - 2 ≃ 6›
+        _ ≤ s^3 - s := le_cube_subst ‹(0:ℤ) < 2› ‹2 ≤ s›
+        _ ≃ 0       := zero_diff_iff_eqv.mpr ‹s^3 ≃ s›
+      le_gt_false ‹(6:ℤ) ≤ 0› ‹(6:ℤ) > 0›
+
+    have : s < 1 + 1 := calc
+      _ = s     := rfl
+      _ < 2     := not_ge_iff_lt.mp ‹¬(s ≥ 2)›
+      _ ≃ 1 + 1 := Rel.symm add_one_one
+    have : s ≤ 1 := le_iff_lt_incR.mpr ‹s < 1 + 1›
+    exact this
+
+  show sgn a ≤ 1 from cube_bound sgn_cubed
 
 end Lean4Axiomatic.Integer

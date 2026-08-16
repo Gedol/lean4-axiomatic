@@ -69,7 +69,7 @@ class Multiplication
   toOps : Multiplication.Ops ℚ
   toProps : Multiplication.Props ℚ
 
-attribute [instance] Multiplication.toOps
+attribute [implicit_reducible, instance] Multiplication.toOps
 attribute [instance] Multiplication.toProps
 
 /-! ## Derived properties -/
@@ -91,6 +91,7 @@ class inductive Sqrt1 (p : ℚ) : Prop where
   from_integer_intro (a : ℤ) (sqrt1 : Integer.Sqrt1 a) (eqv : p ≃ (a : ℚ))
 
 /-- Alternative to `Sqrt1.from_integer_intro` that infers more arguments. -/
+@[implicit_reducible]
 def Sqrt1.from_integer
     {a : ℤ} {p : ℚ} [Integer.Sqrt1 a] : p ≃ (a : ℚ) → Sqrt1 p
     :=
@@ -213,6 +214,7 @@ integer square roots of unity are also rational square roots of unity.
 instance sqrt1_one : Sqrt1 (1 : ℚ) :=
   from_integer_preserves_sqrt1.mpr Integer.sqrt1_one
 
+@[implicit_reducible]
 def mul_monoid_props : CA.Monoid.Props (α := ℚ) (· * ·) 1 :=
 {
   substL  := AA.substL

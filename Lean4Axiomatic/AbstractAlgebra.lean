@@ -1,7 +1,9 @@
 import Lean4Axiomatic.AbstractAlgebra.Substitutive
+import Lean4Axiomatic.Logic
 
 namespace Lean4Axiomatic.AA
 
+open Logic (Either)
 open Relation.Equivalence (EqvOp)
 
 /--
@@ -123,6 +125,7 @@ meeting certain conditions.
 - `EqvOp α`: Necessary because `AbsorbingOn.absorb` requires it.
 - `Commutative f`: Restriction on `f` that's required for the derivation.
 -/
+@[implicit_reducible]
 def absorbingR_from_absorbingL
     {α : Sort u} {z : α} {f : α → α → α} [EqvOp α] [Commutative f]
     : AbsorbingOn Hand.L z f → AbsorbingOn Hand.R z f
@@ -226,6 +229,7 @@ version implies the other.
 - `EqvOp α`: Necessary because `IdentityOn.ident` expresses an equality on `α`.
 - `Commutative f`: Restriction on `f` that's required for the derivation.
 -/
+@[implicit_reducible]
 def identityR_from_identityL
     {α : Sort u} [EqvOp α] {e : α} {f : α → α → α} [Commutative f]
     : IdentityOn Hand.L e f → IdentityOn Hand.R e f
@@ -331,6 +335,7 @@ version implies the other.
 - `IdentityOn hand e f`: Evidence that `e` is an identity element.
 - `Commutative f`: Restriction on `f` that's required for the derivation.
 -/
+@[implicit_reducible]
 def inverseR_from_inverseL
     {α : Sort u} {e : α} {inv : α → α} {f : α → α → α}
     [EqvOp α] [Identity e f] [Commutative f]
@@ -436,6 +441,7 @@ version implies the other.
 - `Commutative g`:
     Restriction on `g` that's required for the derivation.
 -/
+@[implicit_reducible]
 def semicompatibleR_from_semicompatibleL
     {α : Sort u} {f : α → α} {g : α → α → α}
     [EqvOp α] [Substitutive₁ f (· ≃ ·) (· ≃ ·)] [Commutative g]
@@ -579,6 +585,7 @@ attribute [instance] Distributive.distributiveR
 Derive right-distributivity from left-distributivity for operations `f` and `g`
 meeting certain conditions.
 -/
+@[implicit_reducible]
 def distributiveR_from_distributiveL
     {α : Sort u} {f g : α → α → α}
     [EqvOp α] [Commutative f] [Substitutive₂ g AA.tc (· ≃ ·) (· ≃ ·)]
@@ -596,6 +603,17 @@ def distributiveR_from_distributiveL
 
 /-- Expresses that one of two propositions is true, but not both. -/
 def ExactlyOneOfTwo (α β : Prop) : Prop := (α ∨ β) ∧ ¬ (α ∧ β)
+
+/--
+Provides a value of one of the two given propositions, and a proof that the
+other proposition cannot be inhabited.
+-/
+structure ExactlyOneOfTwo₁ (α β : Prop) : Type where
+  /-- A value of one of the two propositions. -/
+  atLeastOne : Either α β
+
+  /-- Both propositions cannot be inhabited. -/
+  atMostOne : ¬(α ∧ β)
 
 /--
 Inhabited when at least one of its three propositions is true; a three-way

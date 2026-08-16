@@ -81,24 +81,6 @@ theorem or_mapR {p₁ p₂ q : Prop} (f : p₁ → p₂) : q ∨ p₁ → q ∨ 
   exact ‹p₂ ∨ q›.symm
 
 /--
-The left operand can be projected from a disjunction if the right operand can
-be converted into it.
--/
-theorem or_projL {p q : Prop} : (q → p) → p ∨ q → p := by
-  intro (f : q → p) (_ : p ∨ q)
-  show p
-  exact ‹p ∨ q›.elim id f
-
-/--
-The right operand can be projected from a disjunction if the left operand can
-be converted into it.
--/
-theorem or_projR {p q : Prop} : (p → q) → p ∨ q → q := by
-  intro (f : p → q) (_ : p ∨ q)
-  show q
-  exact ‹p ∨ q›.elim f id
-
-/--
 Falsehood is the left identity for disjunction: it can be freely added or
 removed as the left operand.
 -/
@@ -107,7 +89,7 @@ theorem or_identL {p : Prop} : False ∨ p ↔ p := by
   case mp =>
     intro (_ : False ∨ p)
     show p
-    exact or_projR False.elim ‹False ∨ p›
+    exact ‹False ∨ p›.elim False.elim id
   case mpr =>
     intro (_ : p)
     show False ∨ p
@@ -121,6 +103,13 @@ theorem or_identR {p : Prop} : p ∨ False ↔ p := calc
   _ ↔ p ∨ False := Iff.rfl
   _ ↔ False ∨ p := Or.comm
   _ ↔ p         := or_identL
+
+/-- A conjuction with both sides identical can be removed. -/
+theorem and_merge {p : Prop} : p ∧ p ↔ p :=
+  Iff.intro And.left (λ x => And.intro x x)
+
+/-- A disjunction with both sides identical can be removed. -/
+theorem or_merge {p : Prop} : p ∨ p ↔ p := Iff.intro (Or.elim · id id) Or.inl
 
 /--
 Disjunction distributes over conjunction.
@@ -198,6 +187,11 @@ inductive Either (α : Prop) (β : Prop) : Type where
 | /-- Left injection. -/ inl (p : α) : Either α β
 | /-- Right injection. -/ inr (p : β) : Either α β
 
+/-- Exchange Either's parameters. -/
+def Either.swap {α β : Prop} : Either α β → Either β α
+| .inl (x : α) => .inr x
+| .inr (y : β) => .inl y
+
 /--
 Class that enables arbitrary expressions in `Prop` to be used as instance
 arguments.
@@ -220,10 +214,11 @@ class AP (p : Prop) : Prop where
   ev : p
 
 /-- Apply `f`, a conversion from one proposition to another, inside `AP`. -/
+@[implicit_reducible]
 def AP.map {p q : Prop} (ap : AP p) (f : p → q) : AP q := AP.mk (f ap.ev)
 
 /-- Lift an implication into `AP`. -/
-@[gcongr]
+@[implicit_reducible, gcongr]
 def AP.subst {p q : Prop} : (p → q) → AP p → AP q := λ f ap => ap.map f
 
 end Lean4Axiomatic.Logic

@@ -50,7 +50,9 @@ export Division (divide)
 /-! ## Derived properties -/
 
 variable
-  {ℕ : Type} [Core ℕ] [Addition ℕ] [Order ℕ] [Multiplication ℕ] [Division ℕ]
+  {ℕ : Type}
+    [Core ℕ] [Addition ℕ] [Order ℕ] [Multiplication ℕ] [Induction.{0} ℕ]
+    [Division ℕ]
 
 /-- Enables the `· ÷ ·` operator to be used for natural number division. -/
 instance divide_op_inst
@@ -58,5 +60,41 @@ instance divide_op_inst
     := {
   divisionSign := divide
 }
+
+/--
+The quotient and remainder of a division are zero when the dividend is zero,
+and vice versa.
+-/
+theorem div_zero
+    {n m : ℕ} [AP (m ≄ 0)]
+    : let d := divide n m; n ≃ 0 ↔ d.quotient ≃ 0 ∧ d.remainder ≃ 0
+    := by
+  intro d
+  let q := d.quotient; let r := d.remainder
+  apply Iff.intro
+  case mp =>
+    intro (_ : n ≃ 0)
+    show q ≃ 0 ∧ r ≃ 0
+
+    have : m * q + r ≃ 0 := calc
+      _ = m * q + r := rfl
+      _ ≃ n         := Rel.symm d.div_eqv
+      _ ≃ 0         := ‹n ≃ 0›
+    have (And.intro (_ : m * q ≃ 0) (_ : r ≃ 0)) :=
+      zero_sum_split.mp ‹m * q + r ≃ 0›
+    have : m ≃ 0 ∨ q ≃ 0 := mul_split_zero.mp ‹m * q ≃ 0›
+    have : q ≃ 0 := this.resolve_left ‹AP (m ≄ 0)›.ev
+    have : q ≃ 0 ∧ r ≃ 0 := And.intro ‹q ≃ 0› ‹r ≃ 0›
+    exact this
+  case mpr =>
+    intro (And.intro (_ : q ≃ 0) (_ : r ≃ 0))
+    show n ≃ 0
+
+    calc
+      _ = n         := rfl
+      _ ≃ m * q + r := d.div_eqv
+      _ ≃ m * 0 + 0 := by srw [‹q ≃ 0›, ‹r ≃ 0›]
+      _ ≃ 0 + 0     := by srw [mul_zero]
+      _ ≃ 0         := AA.identL
 
 end Lean4Axiomatic.Natural

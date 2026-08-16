@@ -25,7 +25,7 @@ class Sign (ℕ : Type) [Core ℕ] where
   /-- Definition, properties, and syntax for the `Positive` predicate. -/
   positivity : Signed.Positivity ℕ
 
-attribute [instance] Sign.positivity
+attribute [implicit_reducible, instance] Sign.positivity
 
 /-!
 ## Derived properties

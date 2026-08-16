@@ -154,6 +154,7 @@ theorem max_leR {p q : ℚ} : q ≤ max p q := by
     show q ≤ q
     exact le_refl
 
+@[implicit_reducible]
 def minmax_props : MinMax.Props ℚ := {
   min_cases := min_cases
   min_leL := min_leL
@@ -163,6 +164,7 @@ def minmax_props : MinMax.Props ℚ := {
   max_leR := max_leR
 }
 
+@[implicit_reducible]
 def minmax : MinMax ℚ := {
   toOps := minmax_ops
   toProps := minmax_props

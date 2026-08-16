@@ -1,4 +1,5 @@
-import Lean4Axiomatic.Integer.Subtraction
+import Lean4Axiomatic.Integer.Induction
+import Lean4Axiomatic.Sequence
 
 /-! # Integer order -/
 
@@ -7,9 +8,10 @@ namespace Lean4Axiomatic.Integer
 open AA.TwoOfThree (oneAndThree twoAndThree)
 open Coe (coe)
 open Logic (
-  AP and_mapL and_mapR iff_subst_contra iff_subst_covar or_mapL or_mapR
+  AP and_mapL and_mapR Either iff_subst_contra iff_subst_covar or_mapL or_mapR
 )
 open Natural (step)
+open Sequence (InfiniteDescent)
 open Signed (Negative Positive)
 
 /-! ## Axioms -/
@@ -34,8 +36,8 @@ class Order
   /-- The intuitive meaning of _less than_ in terms of _less than or equal_. -/
   lt_iff_le_neqv {a b : ℤ} : a < b ↔ a ≤ b ∧ a ≄ b
 
-attribute [instance] Order.leOp
-attribute [instance] Order.ltOp
+attribute [implicit_reducible, instance] Order.leOp
+attribute [implicit_reducible, instance] Order.ltOp
 
 export Order (le_iff_add_nat leOp lt_iff_le_neqv ltOp)
 
@@ -43,6 +45,37 @@ variable {ℕ : Type} [Natural ℕ]
 variable {ℤ : Type} [Core (ℕ := ℕ) ℤ] [Addition ℤ] [Order ℤ]
 
 /-! ## Derived properties -/
+
+/--
+Extract nonequivalence of integers from a _greater than_ relation between them.
+-/
+theorem gt_neqv {a b : ℤ} : a > b → a ≄ b := by
+  intro (_ : a > b)
+  show a ≄ b
+
+  have (And.intro _ (_ : b ≄ a)) := lt_iff_le_neqv.mp ‹b < a›
+  have : a ≄ b := Rel.symm ‹b ≄ a›
+  exact this
+
+/--
+Construct a _less than_ relation on integers from a
+_less than or equivalent to_ relation and a _not equivalent to_ relation.
+-/
+theorem lt_from_le_neqv {a b : ℤ} : a ≤ b → a ≄ b → a < b := by
+  intro (_ : a ≤ b) (_ : a ≄ b)
+  show a < b
+  exact lt_iff_le_neqv.mpr (And.intro ‹a ≤ b› ‹a ≄ b›)
+
+/--
+Construct a _greater than_ relation on integers from a
+_greater than or equivalent to_ relation and a _not equivalent to_ relation.
+-/
+theorem gt_from_ge_neqv {a b : ℤ} : a ≥ b → a ≄ b → a > b := by
+  intro (_ : a ≥ b) (_ : a ≄ b)
+  show a > b
+
+  have : b < a := lt_from_le_neqv ‹b ≤ a› (Rel.symm ‹a ≄ b›)
+  exact this
 
 /--
 Natural numbers maintain their _less than or equivalent to_ relationship when
@@ -203,6 +236,13 @@ instance lt_substitutive_eqv
   substitutiveR := { subst₂ := λ (_ : True) => lt_substR_eqv }
 }
 
+instance gt_substitutive_eqv
+    : AA.Substitutive₂ (α := ℤ) (· > ·) AA.tc (· ≃ ·) (· → ·)
+    := {
+  substitutiveL := { subst₂ := λ (_ : True) => lt_substR_eqv }
+  substitutiveR := { subst₂ := λ (_ : True) => lt_substL_eqv }
+}
+
 /--
 _Less than or equivalent to_ is reflexive.
 
@@ -341,6 +381,13 @@ theorem gt_zero_iff_pos {a : ℤ} : a > 0 ↔ Positive a := calc
   _ ↔ Positive (a - 0) := gt_iff_pos_diff
   _ ↔ Positive a       := Rel.iff_subst_eqv positive_subst sub_identR
 
+/-- A positive integer is nonzero. -/
+theorem neqv_zero_from_gt_zero {a : ℤ} : a > 0 → a ≄ 0 := by
+  intro (_ : a > 0)
+  have : Positive a := gt_zero_iff_pos.mp ‹a > 0›
+  have : a ≄ 0 := neqv_zero_from_positive ‹Positive a›
+  exact this
+
 /--
 Equivalence between the _less than_ relation on integers and their
 difference being negative.
@@ -443,6 +490,7 @@ theorem add_cancelL_lt {a b c : ℤ} : c + a < c + b → a < b := by
     b - a           ≃ _ := Rel.refl
   prw [‹c + b - (c + a) ≃ b - a›] ‹Positive (c + b - (c + a))›
 
+@[implicit_reducible]
 def add_cancellativeL_lt
     : AA.CancellativeOn Hand.L (α := ℤ) (· + ·) AA.tc (· < ·) (· < ·)
     := {
@@ -533,6 +581,7 @@ theorem mul_cancelL_lt {a b c : ℤ} : Positive c → c * a < c * b → a < b :=
     same_sign_positive ‹SameSign c (b - a)› ‹Positive c›
   exact this
 
+@[implicit_reducible]
 def mul_cancellativeL_lt
     : AA.CancellativeOn Hand.L (α := ℤ) (· * ·) Positive (· < ·) (· < ·)
     := {
@@ -586,6 +635,10 @@ instance lt_substitutive_neg
     := {
   subst₁ := lt_neg_flip.mp
 }
+
+/-- Corollary of `lt_neg_flip` for use with `gcongr`. -/
+@[gcongr]
+theorem lt_neg_subst {a b : ℤ} : a < b → -b < -a := lt_neg_flip.mp
 
 instance lt_injective_neg : AA.Injective (α := ℤ) (-·) (· < ·) (· > ·) := {
   inject := lt_neg_flip.mpr
@@ -835,7 +888,7 @@ theorem sgn_preserves_ge_zero {a : ℤ} : a ≥ 0 ↔ sgn a ≥ 0 := calc
   _ ↔ a ≥ 0                 := Iff.rfl
   _ ↔ a > 0 ∨ a ≃ 0         := ge_split
   _ ↔ sgn a > 0 ∨ a ≃ 0     := iff_subst_covar or_mapL sgn_preserves_gt_zero
-  _ ↔ sgn a > 0 ∨ sgn a ≃ 0 := iff_subst_covar or_mapR sgn_zero
+  _ ↔ sgn a > 0 ∨ sgn a ≃ 0 := iff_subst_covar or_mapR sgn_zero.symm
   _ ↔ sgn a ≥ 0             := ge_split.symm
 
 /--
@@ -1234,6 +1287,12 @@ theorem le_or_gt {a b : ℤ} : a ≤ b ∨ a > b := by
     exact Or.inr ‹a > b›
 
 /--
+Two integers are either in a _less than_ relation, or a
+_greater than or equivalent to_ relation.
+-/
+theorem lt_or_ge {a b : ℤ} : a < b ∨ a ≥ b := le_or_gt.symm
+
+/--
 The _less than or equivalent to_ relation is reversed with negated operands.
 
 **Property and proof intuition**: Equivalence is symmetric and preserved by
@@ -1270,6 +1329,14 @@ theorem le_neg_flip {a b : ℤ} : a ≤ b ↔ -b ≤ -a := by
       exact this
 
 /--
+Negation swaps the arguments to _less than or equivalent to_.
+
+Corollary of `le_neg_flip` for use with `gcongr`.
+-/
+@[gcongr]
+theorem le_neg_subst {a b : ℤ} : a ≤ b → -b ≤ -a := le_neg_flip.mp
+
+/--
 Two integers cannot be both _less than or equivalent to_ and _greater than_
 each other.
 
@@ -1299,6 +1366,17 @@ theorem lt_ge_false {a b : ℤ} : a < b → a ≥ b → False := by
   show False
   exact le_gt_false ‹b ≤ a› ‹b > a›
 
+/-- _Less than_ is logically opposite _greater than or equivalent to_. -/
+theorem not_ge_iff_lt {a b : ℤ} : ¬(a ≥ b) ↔ a < b := by
+  apply Iff.intro
+  case mp =>
+    show ¬(a ≥ b) → a < b
+    exact lt_or_ge.resolve_right
+  case mpr =>
+    show a < b → ¬(a ≥ b)
+    show a < b → a ≥ b → False
+    exact lt_ge_false
+
 /--
 Incrementing an integer always increases it.
 
@@ -1327,6 +1405,9 @@ theorem zero_lt_one : (0:ℤ) < 1 := by
   have : (0:ℤ) < 0 + 1 := lt_inc
   prw [add_identL] ‹(0:ℤ) < 0 + 1›
 
+/-- The integer one is greater than or equivalent to zero. -/
+theorem one_ge_zero : (1:ℤ) ≥ 0 := ge_split.mpr (.inl zero_lt_one)
+
 /--
 Negative one is less than zero (in the integers).
 
@@ -1335,6 +1416,14 @@ Negative one is less than zero (in the integers).
 theorem neg_one_lt_zero : (-1:ℤ) < 0 := by
   have : (-1:ℤ) < -1 + 1 := lt_inc
   prw [neg_invL] ‹(-1:ℤ) < -1 + 1›
+
+/-- The integer two is greater than zero. -/
+theorem two_gt_zero : (2:ℤ) > 0 :=
+  have : (1:ℤ) > 0 := zero_lt_one
+  show (2:ℤ) > 0 from Trans.trans two_gt_one ‹(1:ℤ) > 0›
+
+/-- The integer two is greater than or equivalent to zero. -/
+theorem two_ge_zero : (2:ℤ) ≥ 0 := ge_split.mpr (.inl two_gt_zero)
 
 /--
 Convert between _less than_ and _less than or equivalent to_ by incrementing or
@@ -1529,7 +1618,7 @@ theorem ge_mulR_nonneg {a₁ a₂ b : ℤ} : b ≥ 0 → a₁ ≥ a₂ → a₁ 
   | Or.inr (_ : b ≃ 0) =>
     calc
       _ = sgn (a₁ - a₂) * sgn b := rfl
-      _ ≃ sgn (a₁ - a₂) * 0     := by srw [sgn_zero.mp ‹b ≃ 0›]
+      _ ≃ sgn (a₁ - a₂) * 0     := by srw [sgn_zero.mpr ‹b ≃ 0›]
       _ ≃ 0                     := AA.absorbR
       _ ≥ 0                     := le_refl
   have : sgn (a₁ * b - a₂ * b) ≥ 0 := calc
@@ -1539,6 +1628,21 @@ theorem ge_mulR_nonneg {a₁ a₂ b : ℤ} : b ≥ 0 → a₁ ≥ a₂ → a₁ 
     _ ≥ 0                     := ‹sgn (a₁ - a₂) * sgn b ≥ 0›
   have : a₁ * b ≥ a₂ * b := sgn_diff_ge_zero.mpr ‹sgn (a₁ * b - a₂ * b) ≥ 0›
   exact this
+
+/--
+The _less than or equivalent to_ relation between two integers is preserved
+when both are multiplied by a nonnegative integer on the left.
+-/
+@[gcongr]
+theorem le_mulL_nonneg {a₁ a₂ b : ℤ} : b ≥ 0 → a₁ ≤ a₂ → b * a₁ ≤ b * a₂ := by
+  intro (_ : b ≥ 0) (_ : a₁ ≤ a₂)
+  show b * a₁ ≤ b * a₂
+
+  calc
+    _ = b * a₁ := rfl
+    _ ≃ a₁ * b := AA.comm
+    _ ≤ a₂ * b := ge_mulR_nonneg ‹b ≥ 0› ‹a₁ ≤ a₂›
+    _ ≃ b * a₂ := AA.comm
 
 /--
 The product of two nonnegative integers is also nonnegative.
@@ -1599,5 +1703,228 @@ theorem ind_from
   have : motive (n + b) := ‹motive' n›
   have : motive a := motive_subst ‹n + b ≃ a› ‹motive (n + b)›
   exact this
+
+/--
+An integer sequence cannot decrease forever while staying above a fixed value.
+-/
+theorem bounded_inf_desc_impossible
+    {s : Sequence ℤ} {b : ℤ} (bounded : (n : ℕ) → s[n] > b)
+    : ¬(InfiniteDescent s)
+    := by
+  intro (_ : InfiniteDescent s)
+  have desc_at (n : ℕ) : s[n] > s[step n] := ‹InfiniteDescent s› n
+  show False
+
+  have : s[0] > s[1] := calc
+    _ = s[0]      := rfl
+    _ > s[step 0] := desc_at 0
+    _ ≃ s[1]      := by srw [←Natural.literal_step]
+
+  have : s[0] ≤ s[1] :=
+    let motive x := (n : ℕ) → s[n] ≥ x
+
+    have motive_subst {x₁ x₂ : ℤ} : x₁ ≃ x₂ → motive x₁ → motive x₂ := by
+      intro (_ : x₁ ≃ x₂) (m₁ : (n : ℕ) → s[n] ≥ x₁) (n : ℕ)
+      show s[n] ≥ x₂
+
+      calc
+        _ = s[n] := rfl
+        _ ≥ x₁ := m₁ n
+        _ ≃ x₂ := ‹x₁ ≃ x₂›
+
+    have lower_bound_at_index (a : ℤ) : a ≥ b → (n : ℕ) → s[n] ≥ a := by
+      intro (_ : a ≥ b)
+      show motive a
+
+      apply ind_from motive_subst ‹a ≥ b›
+      case base =>
+        show motive b
+        intro (n : ℕ)
+        show s[n] ≥ b
+
+        have : s[n] > b := bounded n
+        have : s[n] ≥ b := ge_split.mpr (.inl ‹s[n] > b›)
+        exact this
+      case next =>
+        intro (c : ℤ) (_ : c ≥ b) (ih : (n : ℕ) → s[n] ≥ c) (n : ℕ)
+        show s[n] ≥ c + 1
+        have : s[n] > c := calc
+          _ = s[n]      := rfl
+          _ > s[step n] := desc_at n
+          _ ≥ c         := ih (step n)
+        have : s[n] ≥ c + 1 := lt_iff_le_incL.mp ‹s[n] > c›
+        exact this
+    have : s[0] > b := bounded 0
+    have : s[0] ≥ b := ge_split.mpr (.inl ‹s[0] > b›)
+    show s[0] ≤ s[1] from lower_bound_at_index s[0] ‹s[0] ≥ b› 1
+
+  have : False := le_gt_false ‹s[0] ≤ s[1]› ‹s[0] > s[1]›
+  exact this
+
+/--
+Compute whether two integers are in a _greater than or equivalent to_ relation.
+-/
+def ge_decidable (a b : ℤ) : Decidable (a ≥ b) :=
+  match show Decidable (sgn (a - b) ≃ -1) from eqv? (sgn (a - b)) (-1:ℤ) with
+  | .isTrue (_ : sgn (a - b) ≃ -1) =>
+    have : a < b := lt_sgn.mpr ‹sgn (a - b) ≃ -1›
+    have : ¬(a ≥ b) := lt_ge_false ‹a < b›
+    show Decidable (a ≥ b) from .isFalse ‹¬(a ≥ b)›
+  | .isFalse (_ : sgn (a - b) ≄ -1) =>
+    have : a ≥ b := ge_sgn.mpr ‹sgn (a - b) ≄ -1›
+    show Decidable (a ≥ b) from .isTrue ‹a ≥ b›
+
+/--
+For two integers obeying the _greater than or equivalent to_ relation, compute
+which more precise relation they obey: _greater than_ or _equivalent to_.
+-/
+def ge_split_either {a b : ℤ} : a ≥ b → Either (a > b) (a ≃ b) := by
+  intro (_ : a ≥ b)
+  show Either (a > b) (a ≃ b)
+  match show Decidable (a ≃ b) from eqv? a b with
+  | .isTrue (_ : a ≃ b) =>
+    exact show Either (a > b) (a ≃ b) from .inr ‹a ≃ b›
+  | .isFalse (_ : a ≄ b) =>
+    have : a > b := lt_iff_le_neqv.mpr (And.intro ‹a ≥ b› (Rel.symm ‹a ≄ b›))
+    exact show Either (a > b) (a ≃ b) from .inl ‹a > b›
+
+/--
+Compute whether an integer is _greater than or equivalent to_ another, or
+_less than_ another.
+-/
+def either_ge_lt {a b : ℤ} : Either (a ≥ b) (a < b) :=
+  have : Decidable (a ≥ b) := ge_decidable a b
+  match this with
+  | .isTrue (_ : a ≥ b) =>
+    .inl ‹a ≥ b›
+  | .isFalse (_ : ¬(a ≥ b)) =>
+    have : a < b := not_ge_iff_lt.mp ‹¬(a ≥ b)›
+    .inr ‹a < b›
+
+/--
+Compute whether an integer is _greater than_ another, or
+_less than or equivalent to_ another.
+-/
+def either_gt_le {a b : ℤ} : Either (a > b) (a ≤ b) :=
+  have : Either (a ≤ b) (a > b) := either_ge_lt
+  this.swap
+
+/-- Compute whether an integer or its negation is nonnegative. -/
+def either_nonneg {a : ℤ} : Either (a ≥ 0) (-a ≥ 0) :=
+  match show Decidable (a ≥ 0) from ge_decidable a 0 with
+  | .isTrue (_ : a ≥ 0) =>
+    show Either (a ≥ 0) (-a ≥ 0) from Either.inl ‹a ≥ 0›
+  | .isFalse (_ : ¬(a ≥ 0)) =>
+    have : a < 0 := match show a < 0 ∨ a ≥ 0 from lt_or_ge with
+    | .inl (_ : a < 0) => ‹a < 0›
+    | .inr (_ : a ≥ 0) => show a < 0 from absurd ‹a ≥ 0› ‹¬(a ≥ 0)›
+    have : a ≤ 0 := le_split.mpr (Or.inl ‹a < 0›)
+    have : -a ≥ 0 := calc
+      _ = -a := rfl
+      _ ≥ -0 := le_neg_flip.mp ‹a ≤ 0›
+      _ ≃ 0  := Rel.symm (neg_zero.mp Rel.refl)
+    show Either (a ≥ 0) (-a ≥ 0) from Either.inr ‹-a ≥ 0›
+
+/--
+Subtraction preserves _less than or equivalent to_ relations between its
+left-hand arguments.
+-/
+@[gcongr]
+theorem le_substL_sub {a₁ a₂ b : ℤ} : a₁ ≤ a₂ → a₁ - b ≤ a₂ - b := by
+  intro (_ : a₁ ≤ a₂)
+  show a₁ - b ≤ a₂ - b
+
+  calc
+    _ = a₁ - b  := rfl
+    _ ≃ a₁ + -b := sub_defn
+    _ ≤ a₂ + -b := by srw [‹a₁ ≤ a₂›]
+    _ ≃ a₂ - b  := Rel.symm sub_defn
+
+/--
+Subtraction flips _less than or equivalent to_ relations between its right-hand
+arguments.
+-/
+@[gcongr]
+theorem le_substR_sub {a₁ a₂ b : ℤ} : a₁ ≤ a₂ → b - a₂ ≤ b - a₁ := by
+  intro (_ : a₁ ≤ a₂)
+  show b - a₂ ≤ b - a₁
+
+  calc
+    _ = b - a₂  := rfl
+    _ ≃ b + -a₂ := sub_defn
+    _ ≤ b + -a₁ := by srw [‹a₁ ≤ a₂›]
+    _ ≃ b - a₁  := Rel.symm sub_defn
+
+/--
+Subtraction preserves _less than_ relations between its left-hand arguments.
+-/
+@[gcongr]
+theorem lt_substL_sub {a₁ a₂ b : ℤ} : a₁ < a₂ → a₁ - b < a₂ - b := by
+  intro (_ : a₁ < a₂)
+  show a₁ - b < a₂ - b
+
+  calc
+    _ = a₁ - b  := rfl
+    _ ≃ a₁ + -b := sub_defn
+    _ < a₂ + -b := by srw [‹a₁ < a₂›]
+    _ ≃ a₂ - b  := Rel.symm sub_defn
+
+/--
+Subtraction flips _less than_ relations between its right-hand arguments.
+-/
+@[gcongr]
+theorem lt_substR_sub {a₁ a₂ b : ℤ} : a₁ < a₂ → b - a₂ < b - a₁ := by
+  intro (_ : a₁ < a₂)
+  show b - a₂ < b - a₁
+
+  calc
+    _ = b - a₂  := rfl
+    _ ≃ b + -a₂ := sub_defn
+    _ < b + -a₁ := by srw [‹a₁ < a₂›]
+    _ ≃ b - a₁  := Rel.symm sub_defn
+
+variable [Induction.{1} ℤ]
+
+/-- Extract the equivalent natural number from a nonnegative integer. -/
+def nonneg_to_natural {a : ℤ} : a ≥ 0 → { n : ℕ // a ≃ n } := by
+  intro (_ : a ≥ 0)
+  show { n : ℕ // a ≃ n }
+
+  have (Subtype.mk (Prod.mk (n : ℕ) (m : ℕ)) (_ : a ≃ n - m)) := as_diff a
+  have (Subtype.mk (d : ℕ) (_ : m + d ≃ n)) :=
+    have : (n:ℤ) - m ≥ 0 := calc
+      _ = (n:ℤ) - m := rfl
+      _ ≃ a         := Rel.symm ‹a ≃ n - m›
+      _ ≥ 0         := ‹a ≥ 0›
+    have : (n:ℤ) ≥ (m:ℤ) := ge_iff_diff_nonneg.mpr ‹(n:ℤ) - m ≥ 0›
+    have : n ≥ m := from_natural_respects_le.mpr ‹(n:ℤ) ≥ (m:ℤ)›
+    show { d : ℕ // m + d ≃ n } from Natural.le_diff ‹n ≥ m›
+
+  have : a ≃ d := calc
+    _ = a                   := rfl
+    _ ≃ n - m               := ‹a ≃ n - m›
+    _ ≃ ((m + d : ℕ):ℤ) - m := by srw [←‹m + d ≃ n›]
+    _ ≃ m + d - m           := by srw [add_compat_nat]
+    _ ≃ d + m - m           := by srw [AA.comm]
+    _ ≃ d + (m - m)         := sub_assoc_addL
+    _ ≃ d + 0               := by srw [sub_same]
+    _ ≃ d                   := AA.identR
+
+  have : { n : ℕ // a ≃ n } := Subtype.mk d ‹a ≃ d›
+  exact this
+
+/-- Extract the equivalent natural number from a positive integer. -/
+def pos_to_natural {a : ℤ} : a > 0 → { n : ℕ // a ≃ n ∧ n > 0 } := by
+  intro (_ : a > 0)
+  show { n : ℕ // a ≃ n ∧ n > 0 }
+
+  have : a ≥ 0 := ge_split.mpr (Or.inl ‹a > 0›)
+  have (Subtype.mk (n : ℕ) (_ : a ≃ n)) := nonneg_to_natural ‹a ≥ 0›
+  have : (n:ℤ) > 0 := calc
+    _ = (n:ℤ) := rfl
+    _ ≃ a     := Rel.symm ‹a ≃ n›
+    _ > 0     := ‹a > 0›
+  have : n > 0 := from_natural_respects_lt.mpr ‹(n:ℤ) > 0›
+  exact Subtype.mk n (And.intro ‹a ≃ n› ‹n > 0›)
 
 end Lean4Axiomatic.Integer

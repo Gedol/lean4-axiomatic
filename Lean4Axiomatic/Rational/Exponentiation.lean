@@ -10,11 +10,15 @@ derived properties.
 
 namespace Lean4Axiomatic.Rational
 
-open Lean4Axiomatic.Function (idx_fam_prop)
+open Lean4Axiomatic.Integer (Even Odd half_floored)
 open Lean4Axiomatic.Logic (AP iff_subst_covar or_identR or_mapR)
 open Lean4Axiomatic.Metric (abs)
 open Lean4Axiomatic.Natural (pow_step pow_zero step)
+open Lean4Axiomatic.Relation.Equivalence (EqvOp)
+open Lean4Axiomatic.Sequence (InfiniteDescent)
 open Lean4Axiomatic.Signed (Positive sgn)
+
+open scoped Lean4Axiomatic.Relation.Equivalence.Impl.Subtype
 
 /-! ## Derived properties for exponentiation to a natural number -/
 
@@ -42,7 +46,7 @@ both sides reduce to `1` via `pow_zero`. The step case follows from `pow_step`
 and `mul_compat_from_integer`.
 -/
 theorem pow_scompatL_from_integer {a : ℤ} {n : ℕ} : ((a^n:ℤ):ℚ) ≃ (a:ℚ)^n := by
-  apply Natural.ind_on n
+  apply Natural.ind_on.{0} n
   case zero =>
     show ((a^0:ℤ):ℚ) ≃ (a:ℚ)^0
     calc
@@ -74,7 +78,7 @@ factor in the expression.
 **Proof intuition**: Induction and algebra.
 -/
 theorem pow_nat_scompatL_abs {p : ℚ} {n : ℕ} : abs (p^n) ≃ (abs p)^n := by
-  apply Natural.ind_on n
+  apply Natural.ind_on.{0} n
   case zero =>
     show abs (p^0) ≃ (abs p)^0
     have : sgn (1:ℚ) ≃ 1 := sgn_one
@@ -111,7 +115,7 @@ reciprocation.
 theorem pow_scompatL_recip
     {p : ℚ} {n : ℕ} [AP (p ≄ 0)] : (p^n)⁻¹ ≃ (p⁻¹)^n
     := by
-  apply Natural.ind_on n
+  apply Natural.ind_on.{0} n
   case zero =>
     show (p^(0:ℕ))⁻¹ ≃ (p⁻¹)^(0:ℕ)
     calc
@@ -194,6 +198,353 @@ theorem sgn_pow_nat {p : ℚ} {n : ℕ} : (sgn (p^n):ℚ) ≃ (sgn p:ℚ)^n := c
   -- This is the key step
   _ ≃ (((sgn p)^n:ℤ):ℚ) := by srw [sgn_int_pow_nat]
   _ ≃ (sgn p:ℚ)^n       := pow_scompatL_from_integer
+
+section sqrt2
+
+/--
+Integers in a ratio whose square is two.
+
+Used in the proof that the square root of two is irrational, to organize the
+data from the hypothesis that a rational number squares to two. The proof
+demonstrates that this structure can't be inhabited.
+-/
+structure Sqrt2Ratio
+    {ℕ : Type} [Natural ℕ] (ℤ : Type) [Integer (ℕ := ℕ) ℤ]
+    where
+  /-- The ratio's numerator. -/
+  numer : ℤ
+
+  /-- The ratio's denominator. -/
+  denom : ℤ
+
+  /-- The numerator is positive. -/
+  n_pos : numer > 0
+
+  /-- The denominator is positive. -/
+  d_pos : denom > 0
+
+  /--
+  The ratio squares to two.
+
+  **Intuition**: Expand and rearrange `(numer/denom)^2 ≃ 2`.
+  -/
+  sqrt2 : numer^2 ≃ 2 * denom^2
+
+namespace Sqrt2Ratio
+
+/-- Projection of the data components of a `Sqrt2Ratio`. -/
+def to_prod (r : Sqrt2Ratio ℤ) : ℤ × ℤ := (r.numer, r.denom)
+
+/--
+`Sqrt2Ratio` equivalence is only on the data components.
+
+This is too restrictive if we want to actually treat values of `Sqrt2Ratio ℤ`
+as ratios, but it's sufficient for proving that the square root of two is
+irrational and keeps the proofs simpler.
+-/
+instance eqvOp_inst : EqvOp (Sqrt2Ratio ℤ) :=
+  Relation.Equivalence.Impl.Mapped.eqvOp to_prod
+
+/-- Equivalent ratios have equivalent numerators. -/
+@[gcongr]
+theorem numer_subst {r₁ r₂ : Sqrt2Ratio ℤ} : r₁ ≃ r₂ → r₁.numer ≃ r₂.numer := by
+  intro (_ : r₁ ≃ r₂)
+  show r₁.numer ≃ r₂.numer
+
+  have (And.intro (_ : r₁.numer ≃ r₂.numer) _) :=
+    Relation.Equivalence.Impl.Prod.eqv_defn.mp ‹r₁ ≃ r₂›
+  exact ‹r₁.numer ≃ r₂.numer›
+
+instance numer_subst_inst
+    : AA.Substitutive₁ (α := Sqrt2Ratio ℤ) (·.numer) (· ≃ ·) (· ≃ ·)
+    := {
+  subst₁ := numer_subst
+}
+
+/-- Equivalent ratios have equivalent denominators. -/
+@[gcongr]
+theorem denom_subst {r₁ r₂ : Sqrt2Ratio ℤ} : r₁ ≃ r₂ → r₁.denom ≃ r₂.denom := by
+  intro (_ : r₁ ≃ r₂)
+  show r₁.denom ≃ r₂.denom
+
+  have (And.intro _ (_ : r₁.denom ≃ r₂.denom)) :=
+    Relation.Equivalence.Impl.Prod.eqv_defn.mp ‹r₁ ≃ r₂›
+  exact ‹r₁.denom ≃ r₂.denom›
+
+instance denom_subst_inst
+    : AA.Substitutive₁ (α := Sqrt2Ratio ℤ) (·.denom) (· ≃ ·) (· ≃ ·)
+    := {
+  subst₁ := denom_subst
+}
+
+/-- A `Sqrt2Ratio`'s numerator is greater than its denominator. -/
+theorem numer_gt_denom {r : Sqrt2Ratio ℤ} : r.numer > r.denom := by
+  let a := r.numer
+  let b := r.denom
+  have : a > 0 := r.n_pos
+  have : b > 0 := r.d_pos
+  have : a^2 ≃ 2 * b^2 := r.sqrt2
+
+  have : sgn (a - b) ≃ 1 :=
+    have : a ≥ 0 := Integer.ge_split.mpr (.inl ‹a > 0›)
+    have : b ≥ 0 := Integer.ge_split.mpr (.inl ‹b > 0›)
+    have : (2:ℕ) ≥ 1 := Natural.le_split.mpr (Or.inl Natural.two_gt_one)
+    have : sgn (a^2 - b^2) ≃ sgn (a - b) :=
+      Integer.sgn_diff_pow_pos ‹a ≥ 0› ‹b ≥ 0› ‹2 ≥ 1›
+
+    show sgn (a - b) ≃ 1 from calc
+      _ = sgn (a - b)             := rfl
+      _ ≃ sgn (a^2 - b^2)         := Rel.symm ‹sgn (a^2 - b^2) ≃ sgn (a - b)›
+      _ ≃ sgn (2 * b^2 - b^2)     := by srw [‹a^2 ≃ 2 * b^2›]
+      _ ≃ sgn (b^2 + b^2 - b^2)   := by srw [Integer.mul_two]
+      _ ≃ sgn (b^2 + (b^2 - b^2)) := by srw [Integer.sub_assoc_addL]
+      _ ≃ sgn (b^2 + 0)           := by srw [Integer.sub_same]
+      _ ≃ sgn (b^2)               := by srw [Integer.add_identR]
+      _ ≃ (sgn b)^2               := Integer.sgn_pow
+      _ ≃ 1^2                     := by srw [Integer.gt_zero_sgn.mp ‹b > 0›]
+      _ ≃ 1                       := Natural.pow_absorbL
+
+  have : a > b := Integer.gt_sgn.mpr ‹sgn (a - b) ≃ 1›
+  have : r.numer > r.denom := this
+  exact this
+
+/--
+Relation that holds when the first ratio's numerator is greater than the second
+ratio's numerator.
+
+A named definition is needed so we can define an `AA.Substitutive₂` instance for
+it, which is used in the irrationality proof of the square root of two.
+-/
+def numer_gt (r₁ r₂ : Sqrt2Ratio ℤ) : Prop := r₁.numer > r₂.numer
+
+/-- The left argument of `numer_gt` respects equivalence. -/
+@[gcongr]
+theorem numer_gt_substL
+    {r₁ r₂ s : Sqrt2Ratio ℤ} : r₁ ≃ r₂ → numer_gt r₁ s → numer_gt r₂ s
+    := by
+  intro (_ : r₁ ≃ r₂) (_ : numer_gt r₁ s)
+  show numer_gt r₂ s
+
+  have : r₁.numer > s.numer := ‹numer_gt r₁ s›
+  have : r₂.numer > s.numer := calc
+    _ = r₂.numer := rfl
+    _ ≃ r₁.numer := by srw [←‹r₁ ≃ r₂›]
+    _ > s.numer  := ‹r₁.numer > s.numer›
+  have : numer_gt r₂ s := ‹r₂.numer > s.numer›
+  exact this
+
+/-- The right argument of `numer_gt` respects equivalence. -/
+@[gcongr]
+theorem numer_gt_substR
+    {r₁ r₂ s : Sqrt2Ratio ℤ} : r₁ ≃ r₂ → numer_gt s r₁ → numer_gt s r₂
+    := by
+  intro (_ : r₁ ≃ r₂) (_ : numer_gt s r₁)
+  show numer_gt s r₂
+
+  have : s.numer > r₁.numer := ‹numer_gt s r₁›
+  have : s.numer > r₂.numer := calc
+    _ = s.numer  := rfl
+    _ > r₁.numer := ‹s.numer > r₁.numer›
+    _ ≃ r₂.numer := by srw [‹r₁ ≃ r₂›]
+  have : numer_gt s r₂ := ‹s.numer > r₂.numer›
+  exact this
+
+instance numer_gt_subst_inst
+    : AA.Substitutive₂ (α := Sqrt2Ratio ℤ) numer_gt AA.tc (· ≃ ·) (· → ·)
+    := {
+  substitutiveL := { subst₂ := λ _ => numer_gt_substL }
+  substitutiveR := { subst₂ := λ _ => numer_gt_substR }
+}
+
+/--
+Given any two integers satisfying `Sqrt2Ratio`, compute two smaller integers in
+the same ratio.
+-/
+def smaller (r : Sqrt2Ratio ℤ) : Sqrt2Ratio ℤ :=
+  let a := r.numer
+  let b := r.denom
+  have : a > 0 := r.n_pos
+  have : b > 0 := r.d_pos
+  have : a^2 ≃ 2 * b^2 := r.sqrt2
+
+  let c := half_floored a
+  have : a ≃ 2 * c :=
+    have : Even (a^2) := Integer.even_from_eqv ‹a^2 ≃ 2 * b^2›
+    have : Even a := Integer.even_from_sqr_even ‹Even (a^2)›
+    show a ≃ 2 * c from Integer.even_eqv ‹Even a›
+
+  have : c > 0 :=
+    have : Positive (2:ℤ) := Integer.sgn_positive.mpr Integer.sgn_two_eqv_one
+    have : 2 * c > 2 * 0 := calc
+      _ = 2 * c := rfl
+      _ ≃ a     := Rel.symm ‹a ≃ 2 * c›
+      _ > 0     := ‹a > 0›
+      _ ≃ 2 * 0 := Rel.symm AA.absorbR
+    show c > 0 from Integer.mul_cancelL_lt ‹Positive (2:ℤ)› ‹2 * c > 2 * 0›
+
+  have : b^2 ≃ 2 * c^2 :=
+    have : 2 * b^2 ≃ 2 * (2 * c^2) := calc
+      _ = 2 * b^2       := rfl
+      _ ≃ a^2           := Rel.symm ‹a^2 ≃ 2 * b^2›
+      _ ≃ (2 * c)^2     := by srw [‹a ≃ 2 * c›]
+      _ ≃ 2^2 * c^2     := Natural.pow_distribR_mul
+      _ ≃ (2 * 2) * c^2 := by srw [Natural.pow_two]
+      _ ≃ 2 * (2 * c^2) := AA.assoc
+    show b^2 ≃ 2 * c^2 from
+      Integer.mul_cancelL Integer.two_neqv_zero ‹2 * b^2 ≃ 2 * (2 * c^2)›
+
+  show Sqrt2Ratio ℤ from .mk b c ‹b > 0› ‹c > 0› ‹b^2 ≃ 2 * c^2›
+
+/-- Equivalent ratios generate equivalent smaller ratios. -/
+@[gcongr]
+theorem smaller_subst
+    {r₁ r₂ : Sqrt2Ratio ℤ} : r₁ ≃ r₂ → smaller r₁ ≃ smaller r₂
+    := by
+  intro (_ : r₁ ≃ r₂)
+  show smaller r₁ ≃ smaller r₂
+
+  have : r₁.to_prod ≃ r₂.to_prod := ‹r₁ ≃ r₂›
+  have : (smaller r₁).to_prod ≃ (smaller r₂).to_prod := calc
+    _ = (smaller r₁).to_prod              := rfl
+    _ = (r₁.denom, half_floored r₁.numer) := rfl
+    _ ≃ (r₂.denom, half_floored r₁.numer) := by srw [‹r₁ ≃ r₂›]
+    _ ≃ (r₂.denom, half_floored r₂.numer) := by srw [‹r₁ ≃ r₂›]
+    _ = (smaller r₂).to_prod              := rfl
+  have : smaller r₁ ≃ smaller r₂ :=
+    ‹(smaller r₁).to_prod ≃ (smaller r₂).to_prod›
+  exact this
+
+instance smaller_subst_inst
+    : AA.Substitutive₁ (α := Sqrt2Ratio ℤ) smaller (· ≃ ·) (· ≃ ·)
+    := {
+  subst₁ := smaller_subst
+}
+
+/-- The numerator of `smaller`'s output is the denominator of its input. -/
+theorem smaller_numer_is_denom
+    {r : Sqrt2Ratio ℤ} : (smaller r).numer = r.denom
+    :=
+  rfl
+
+/--
+The output of `smaller` does indeed have a numerator that is less than the
+input's numerator.
+-/
+theorem numer_gt_link (r : Sqrt2Ratio ℤ) : numer_gt r (smaller r) := by
+  have : r.numer > (smaller r).numer := calc
+    _ = r.numer           := rfl
+    _ > r.denom           := numer_gt_denom
+    _ = (smaller r).numer := smaller_numer_is_denom.symm
+  have : numer_gt r (smaller r) := this
+  exact this
+
+end Sqrt2Ratio
+
+/-- There's no rational number whose square is two. -/
+theorem sqrt2_irrational {p : ℚ} : p^2 ≄ 2 := by
+  intro (_ : p^2 ≃ 2)
+  show False
+  /-
+  Strategy: use the assumption to construct an infinite, decreasing, positive
+  integer sequence; an impossibility due to the principle of infinite descent.
+  -/
+
+  -- Starting point for the infinite sequence
+  let init : Sqrt2Ratio ℤ :=
+    have (AsRatio.mk (a':ℤ) (b':ℤ) (_ : AP (b' ≄ 0)) p_eqv) := as_ratio p
+    have : b' ≄ 0 := ‹AP (b' ≄ 0)›.ev
+    have : p ≃ a'/b' := p_eqv
+
+    let a := abs a'; let b := abs b'
+    have : b > 0 :=
+      have : b ≥ 0 := Integer.abs_nonneg
+      have : b ≄ 0 := mt Integer.abs_zero.mp ‹AP (b' ≄ 0)›.ev
+      Integer.lt_iff_le_neqv.mpr (And.intro ‹b ≥ 0› (Rel.symm ‹b ≄ 0›))
+
+    have : ((a'^2:ℤ):ℚ) ≃ ((2 * b'^2 : ℤ):ℚ) :=
+      have : (sgn (b'^2))^2 ≃ 1 := calc
+        _ = (sgn (b'^2))^2 := rfl
+        _ ≃ ((sgn b')^2)^2 := by srw [Integer.sgn_pow]
+        _ ≃ 1^2            := by srw [Integer.sgn_sqr_nonzero.mpr ‹b' ≄ 0›]
+        _ ≃ 1              := Natural.pow_absorbL
+      have : b'^2 ≄ 0 := Integer.sgn_sqr_nonzero.mp ‹(sgn (b'^2))^2 ≃ 1›
+      have : AP (b'^2 ≄ 0) := AP.mk this
+      let a'q : ℚ := a'; let b'q : ℚ := b'
+      show ((a'^2:ℤ):ℚ) ≃ ((2 * b'^2 : ℤ):ℚ) from calc
+        _ = ((a'^2:ℤ):ℚ)                := rfl
+        _ ≃ (a':ℚ)^2                    := pow_scompatL_from_integer
+        _ = a'q^2                       := rfl
+        _ ≃ a'q^2 * 1                   := by srw [←mul_identR]
+        _ ≃ a'q^2 * ((b'q^2)⁻¹ * b'q^2) := by srw [←mul_inverseL]
+        _ ≃ a'q^2 * (b'q^2)⁻¹ * b'q^2   := eqv_symm mul_assoc
+        _ ≃ a'q^2/b'q^2 * b'q^2         := by srw [←div_mul_recip]
+        _ ≃ (a'q/b'q)^2 * b'q^2         := by srw [←pow_distribR_div]
+        _ = ((a':ℚ)/b')^2 * b'q^2       := rfl
+        _ ≃ p^2 * b'q^2                 := by srw [←‹p ≃ a'/b'›]
+        _ ≃ 2 * b'q^2                   := by srw [‹p^2 ≃ 2›]
+        _ = 2 * (b':ℚ)^2                := rfl
+        _ ≃ (2:ℚ) * ((b'^2:ℤ):ℚ)        := by srw [←pow_scompatL_from_integer]
+        _ ≃ ((2 * b'^2 : ℤ):ℚ)          := eqv_symm mul_compat_from_integer
+
+    have : a > 0 :=
+      have : a'^2 ≃ 2 * b'^2 :=
+        from_integer_inject ‹((a'^2:ℤ):ℚ) ≃ ((2*b'^2:ℤ):ℚ)›
+      have : sgn a ≃ 1 := calc
+        _ = sgn a                  := rfl
+        _ = sgn (abs a')           := rfl
+        _ ≃ (sgn a')^2             := Integer.sgn_abs
+        _ ≃ sgn (a'^2)             := Rel.symm Integer.sgn_pow
+        _ ≃ sgn (2 * b'^2)         := by srw [‹a'^2 ≃ 2 * b'^2›]
+        _ ≃ sgn (2:ℤ) * sgn (b'^2) := Integer.sgn_compat_mul
+        _ ≃ 1 * sgn (b'^2)         := by srw [Integer.sgn_two_eqv_one]
+        _ ≃ sgn (b'^2)             := AA.identL
+        _ ≃ (sgn b')^2             := Integer.sgn_pow
+        _ ≃ sgn (abs b')           := Rel.symm Integer.sgn_abs
+        _ = sgn b                  := rfl
+        _ ≃ 1                      := Integer.gt_zero_sgn.mp ‹b > 0›
+      show a > 0 from Integer.gt_zero_sgn.mpr ‹sgn a ≃ 1›
+
+    have : a^2 ≃ 2 * b^2 :=
+      have : ((a^2:ℤ):ℚ) ≃ ((2 * b^2 : ℤ):ℚ) := calc
+        _ = ((a^2:ℤ):ℚ)                 := rfl
+        _ = (((abs a')^2:ℤ):ℚ)          := rfl
+        _ ≃ ((a'^2:ℤ):ℚ)                := by srw [Integer.abs_sqr]
+        _ ≃ ((2 * b'^2 : ℤ):ℚ)          := ‹((a'^2:ℤ):ℚ) ≃ ((2 * b'^2 : ℤ):ℚ)›
+        _ ≃ ((2 * (abs b')^2 : ℤ):ℚ)    := by srw [←Integer.abs_sqr]
+        _ = ((2 * b^2 : ℤ):ℚ)           := rfl
+      show a^2 ≃ 2 * b^2 from from_integer_inject ‹((a^2:ℤ):ℚ) ≃ ((2*b^2:ℤ):ℚ)›
+    show Sqrt2Ratio ℤ from Sqrt2Ratio.mk a b ‹a > 0› ‹b > 0› ‹a^2 ≃ 2 * b^2›
+
+  let ratios : Sequence (Sqrt2Ratio ℤ) :=
+    Sequence.iterate init Sqrt2Ratio.smaller
+  let numerators : Sequence ℤ := ratios.map (·.numer)
+
+  have : InfiniteDescent numerators :=
+    have chain
+        {ℕ : Type} [Natural ℕ]
+        : (x : ℕ) → ratios[x].numer > ratios[step x].numer
+        :=
+      Sequence.iterate_chain Sqrt2Ratio.numer_gt_link
+    have desc
+        {ℕ : Type} [Natural ℕ] : (x : ℕ) → numerators[x] > numerators[step x]
+        :=
+      Sequence.map_chain chain
+    show InfiniteDescent numerators from desc
+
+  have : ¬InfiniteDescent numerators :=
+    have numerators_bounded (n : ℕ) : numerators[n] > 0 := calc
+      _ = numerators[n]             := rfl
+      _ = (ratios.map (·.numer))[n] := rfl
+      _ ≃ ratios[n].numer           := Sequence.map_index
+      _ > 0                         := ratios[n].n_pos
+    show ¬InfiniteDescent numerators from
+      Integer.bounded_inf_desc_impossible numerators_bounded
+
+  have : False :=
+    absurd ‹InfiniteDescent numerators› ‹¬InfiniteDescent numerators›
+  exact this
+
+end sqrt2
 
 variable [Subtraction ℚ] [Order ℚ]
 
@@ -506,7 +857,7 @@ class Exponentiation
   toOps : Exponentiation.Ops ℚ ℤ
   toProps : Exponentiation.Props ℚ
 
-attribute [instance] Exponentiation.toOps
+attribute [implicit_reducible, instance] Exponentiation.toOps
 attribute [instance] Exponentiation.toProps
 
 /-! ## Derived properties for exponentiation to an integer -/
@@ -537,8 +888,7 @@ theorem pow_substL
   intro (_ : p₁ ≃ p₂)
   show p₁^a ≃ p₂^a
 
-  have Exists.intro (n : ℕ) (Exists.intro (m : ℕ) (_ : a ≃ n - m)) :=
-    Integer.as_diff a
+  have Subtype.mk (Prod.mk (n : ℕ) (m : ℕ)) (_ : a ≃ n - m) := Integer.as_diff a
   calc
     _ = p₁^a           := rfl
     _ ≃ p₁^((n:ℤ) - m) := by srw [‹a ≃ n - m›]
@@ -566,8 +916,7 @@ theorem pow_preserves_nonzero {p : ℚ} {a : ℤ} [AP (p ≄ 0)] : p^a ≄ 0 := 
   intro (_ : p^a ≃ 0)
   show False
 
-  have Exists.intro (n : ℕ) (Exists.intro (m : ℕ) (_ : a ≃ n - m)) :=
-    Integer.as_diff a
+  have Subtype.mk (Prod.mk (n : ℕ) (m : ℕ)) (_ : a ≃ n - m) := Integer.as_diff a
   have : p^n / p^m ≃ 0 := calc
     _ = p^n / p^m     := rfl
     _ ≃ p^((n:ℤ) - m) := eqv_symm pow_diff
@@ -651,10 +1000,8 @@ of this property.
 theorem pow_compatL_add
     {p : ℚ} [AP (p ≄ 0)] {a b : ℤ} : p^(a + b) ≃ p^a * p^b
     := by
-  have Exists.intro (n : ℕ) (Exists.intro (m : ℕ) (_ : a ≃ n - m)) :=
-    Integer.as_diff a
-  have Exists.intro (k : ℕ) (Exists.intro (j : ℕ) (_ : b ≃ k - j)) :=
-    Integer.as_diff b
+  have Subtype.mk (Prod.mk (n : ℕ) (m : ℕ)) (_ : a ≃ n - m) := Integer.as_diff a
+  have Subtype.mk (Prod.mk (k : ℕ) (j : ℕ)) (_ : b ≃ k - j) := Integer.as_diff b
   have : a + b ≃ (n + k : ℕ) - (m + j : ℕ) := calc
     _ = a + b                     := rfl
     _ ≃ (n - m) + (k - j)         := by srw [‹a ≃ n - m›, ‹b ≃ k - j›]
@@ -698,9 +1045,9 @@ expression has a single instance of the base raised to a single exponent.
 Simplify that exponent to obtain the result.
 -/
 theorem pow_flatten {p : ℚ} [AP (p ≄ 0)] {a b : ℤ} : (p^a)^b ≃ p^(a * b) := by
-  have Exists.intro (n : ℕ) (Exists.intro (m : ℕ) (a_eqv : a ≃ n - m)) :=
+  have Subtype.mk (Prod.mk (n : ℕ) (m : ℕ)) (a_eqv : a ≃ n - m) :=
     Integer.as_diff a
-  have Exists.intro (k : ℕ) (Exists.intro (j : ℕ) (b_eqv : b ≃ k - j)) :=
+  have Subtype.mk (Prod.mk (k : ℕ) (j : ℕ)) (b_eqv : b ≃ k - j) :=
     Integer.as_diff b
 
   let pn := p^n; let pm := p^m
@@ -780,7 +1127,7 @@ theorem pow_distribR_mul
   -- Bridge the eta mismatch locally: `mul_monoid` is for `(· * ·)` but
   -- `Natural.pow_distribR_mul` unifies `mul` to `Mul.mul` (eta-reduced).
   letI : CA.Monoid.Monoid ℚ Mul.mul 1 := mul_monoid
-  have Exists.intro (n : ℕ) (Exists.intro (m : ℕ) (a_eqv : a ≃ n - m)) :=
+  have Subtype.mk (Prod.mk (n : ℕ) (m : ℕ)) (a_eqv : a ≃ n - m) :=
     Integer.as_diff a
 
   calc
@@ -806,8 +1153,7 @@ numbers. Convert the expression to a ratio of natural number powers via
 number exponents.
 -/
 theorem one_pow {a : ℤ} : (1:ℚ)^a ≃ 1 := by
-  have Exists.intro (n : ℕ) (Exists.intro (m : ℕ) (_ : a ≃ n - m)) :=
-    Integer.as_diff a
+  have Subtype.mk (Prod.mk (n : ℕ) (m : ℕ)) (_ : a ≃ n - m) := Integer.as_diff a
   calc
     _ = (1:ℚ)^a           := rfl
     _ ≃ (1:ℚ)^((n:ℤ) - m) := by srw [‹a ≃ n - m›]
@@ -826,8 +1172,7 @@ integer power, and computing its absolute value.
 theorem pow_int_scompatL_abs
     {p : ℚ} [AP (p ≄ 0)] {a : ℤ} : abs (p^a) ≃ (abs p)^a
     := by
-  have Exists.intro (n : ℕ) (Exists.intro (m : ℕ) (_ : a ≃ n - m)) :=
-    Integer.as_diff a
+  have Subtype.mk (Prod.mk (n : ℕ) (m : ℕ)) (_ : a ≃ n - m) := Integer.as_diff a
 
   calc
     _ = abs (p^a)             := rfl
@@ -851,8 +1196,7 @@ integer power, and extracting its (rational-valued) sign.
 theorem sgn_pow_int
     {p : ℚ} [AP (p ≄ 0)] {a : ℤ} : (sgn (p^a):ℚ) ≃ (sgn p:ℚ)^a
     := by
-  have Exists.intro (n : ℕ) (Exists.intro (m : ℕ) (_ : a ≃ n - m)) :=
-    Integer.as_diff a
+  have Subtype.mk (Prod.mk (n : ℕ) (m : ℕ)) (_ : a ≃ n - m) := Integer.as_diff a
   calc
     _ = (sgn (p^a):ℚ)               := rfl
     _ ≃ (sgn (p^n/p^m):ℚ)           := by srw [‹a ≃ n - m›, pow_diff]
@@ -927,7 +1271,7 @@ theorem sgn_diff_pow
       _ ≃ x^(0:ℤ) := by srw [‹a ≃ 0›]
       _ ≃ x^(0:ℕ) := pow_nonneg
       _ ≃ 1       := Natural.pow_zero
-    have : sgn a ≃ 0 := Integer.sgn_zero.mp ‹a ≃ 0›
+    have : sgn a ≃ 0 := Integer.sgn_zero.mpr ‹a ≃ 0›
     calc
       -- ↓ begin key steps ↓
       _ = sgn (p^a - q^a)     := rfl
@@ -1062,7 +1406,7 @@ theorem pow_bijectL
     sgn_diff_pow ‹p > 0› ‹q > 0›
   have a_neqv_0 : sgn a ≃ 0 ↔ False := calc
     _ ↔ sgn a ≃ 0 := Iff.rfl
-    _ ↔ a ≃ 0     := Integer.sgn_zero.symm
+    _ ↔ a ≃ 0     := Integer.sgn_zero
     _ ↔ False     := Iff.intro ‹a ≄ 0› False.elim
 
   calc

@@ -6,6 +6,7 @@ import Lean4Axiomatic.Relation.Equivalence
 namespace Lean4Axiomatic.Integer
 
 open Coe (coe)
+open Logic (AP)
 
 /-! ## Axioms -/
 
@@ -22,7 +23,7 @@ class Equivalence (ℤ : Type) where
   -/
   eqvOp : Relation.Equivalence.EqvOp ℤ
 
-attribute [instance] Equivalence.eqvOp
+attribute [implicit_reducible, instance] Equivalence.eqvOp
 
 export Equivalence (eqvOp)
 
@@ -51,7 +52,7 @@ class Conversion {ℕ : Type} [Natural ℕ] (ℤ : Type) [Equivalence ℤ] where
 export Conversion (from_natural_subst)
 
 attribute [gcongr] from_natural_subst
-attribute [instance] Conversion.from_natural
+attribute [implicit_reducible, instance] Conversion.from_natural
 attribute [instance] Conversion.from_natural_injective
 
 instance from_natural_substitutive
@@ -95,8 +96,12 @@ instance literal {n : Nat} : OfNat ℤ n := {
 theorem one_neqv_zero : (1 : ℤ) ≄ 0 :=
   mt Conversion.from_natural_injective.inject Natural.one_neqv_zero
 
+instance one_neqv_zero_inst : AP ((1:ℤ) ≄ 0) := AP.mk one_neqv_zero
+
 /-- The integer two is not the same as the integer zero. -/
 theorem two_neqv_zero : (2:ℤ) ≄ 0 :=
   mt Conversion.from_natural_injective.inject Natural.two_neqv_zero
+
+instance two_neqv_zero_inst : AP ((2:ℤ) ≄ 0) := AP.mk two_neqv_zero
 
 end Lean4Axiomatic.Integer

@@ -46,7 +46,7 @@ class Addition
   add_compatible_from_natural
     : AA.Compatible₂ (α := ℕ) (β := ℤ) (↑·) (· + ·) (· + ·)
 
-attribute [instance] Addition.addOp
+attribute [implicit_reducible, instance] Addition.addOp
 attribute [instance] Addition.add_associative
 attribute [instance] Addition.add_commutative
 attribute [instance] Addition.add_compatible_from_natural

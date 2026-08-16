@@ -33,7 +33,7 @@ class Multiplication (ℕ : Type) [Core ℕ] [Addition ℕ] where
   -/
   step_mul {n m : ℕ} : step n * m ≃ (n * m) + m
 
-attribute [instance] Multiplication.mulOp
+attribute [implicit_reducible, instance] Multiplication.mulOp
 
 export Multiplication (mulOp step_mul zero_mul)
 
@@ -318,6 +318,15 @@ instance mul_identity : AA.Identity (α := ℕ) 1 (· * ·) := {
 }
 
 /--
+Convert multiplication of a natural number by two into addition.
+-/
+theorem two_mul {n : ℕ} : 2 * n ≃ n + n := calc
+  _ = 2 * n      := rfl
+  _ ≃ step 1 * n := by srw [Natural.literal_step]
+  _ ≃ 1 * n + n  := step_mul
+  _ ≃ n + n      := by srw [mul_identL]
+
+/--
 The grouping of the factors in a product doesn't matter.
 
 **Intuition**: Imagine a collection of identical objects arranged into a
@@ -450,6 +459,7 @@ then multiplying them both by a nonzero (i.e., positive) natural number will
 preserve their ordering (by `mul_substitutive_lt`), contradicting the hypothesis
 that the products are equal. Thus the right-hand factors must be equal.
 -/
+@[implicit_reducible]
 def mul_cancelL
     : AA.CancellativeOn Hand.L (α := ℕ) (· * ·) (· ≄ 0) (· ≃ ·) (· ≃ ·)
     := by
@@ -545,6 +555,7 @@ theorem sqrt1 {n : ℕ} : n * n ≃ 1 ↔ n ≃ 1 := by
     have : n * n ≃ 1 := factors_eqv_1.mpr (And.intro ‹n ≃ 1› ‹n ≃ 1›)
     exact this
 
+@[implicit_reducible]
 def mul_monoid_props : CA.Monoid.Props (α := ℕ) (· * ·) 1 := {
   substL  := AA.substL
   substR  := AA.substR

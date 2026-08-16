@@ -94,6 +94,7 @@ include the integer exponent; that will be determined when integer recursion is
 invoked using this context. Instead, think of this type as exponentiation to a
 specific, but unspecified, integer value.
 -/
+@[implicit_reducible]
 private def ind_ctx
     : Integer.Induction.Context (λ (_ : ℤ) => (p : ℚ) → [AP (p ≄ 0)] → ℚ)
     :=
@@ -186,6 +187,7 @@ theorem pow_substR
 This file proves the theorems necessary for showing that its implementation of
 rational exponentiation to integer powers is correct.
 -/
+@[implicit_reducible]
 def exponentiation_props : Exponentiation.Props ℚ := {
   pow_diff := pow_diff
   pow_substR := pow_substR
@@ -195,6 +197,7 @@ def exponentiation_props : Exponentiation.Props ℚ := {
 This file is a complete and correct implementation of rational exponentiation
 to an integer.
 -/
+@[implicit_reducible]
 def integer_exponentiation : Exponentiation ℚ := {
   toOps := exponentiation_ops
   toProps := exponentiation_props

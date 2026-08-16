@@ -82,6 +82,7 @@ class Induction.Context
     : fsubst diff_eqv (on_diff n₁ m₁) ≃ on_diff n₂ m₂
 
 /-- Operations pertaining to eliminators on integers. -/
+@[univ_out_params]
 class Induction.Ops
     {ℕ : outParam Type} [Natural ℕ]
     (ℤ : Type) [Core (ℕ := ℕ) ℤ] [Addition ℤ] [Negation ℤ] [Subtraction ℤ]
@@ -163,14 +164,14 @@ class Induction.Props
     : fsubst ‹a₁ ≃ a₂› (ctx.ind_diff a₁) ≃ ctx.ind_diff a₂
 
 /-- All integer induction/eliminator axioms. -/
-class Induction
+class Induction.{u}
     {ℕ : outParam Type} [Natural ℕ]
     (ℤ : Type) [Core (ℕ := ℕ) ℤ] [Addition ℤ] [Negation ℤ] [Subtraction ℤ]
     where
-  toOps : Induction.Ops ℤ
+  toOps : Induction.Ops.{u} ℤ
   toProps : Induction.Props ℤ
 
-attribute [instance] Induction.toOps
+attribute [implicit_reducible, instance] Induction.toOps
 attribute [instance] Induction.toProps
 
 /-! ## Derived properties -/
@@ -188,6 +189,7 @@ always holds because `motive (n₁ - m₁) : Prop` implies
 `on_diff n₁ m₁` and `on_diff n₂ m₂` both have type `motive (n₂ - m₂)` and
 therefore are equivalent by proof irrelevance of `Prop` elements.
 -/
+@[implicit_reducible]
 def ind_ctx_prop
     {motive : ℤ → Prop} [IndexedFamily motive]
     (on_diff : (n m : ℕ) → motive (n - m))
@@ -203,6 +205,7 @@ i.e. motives of the form `ℤ → X` where `X` is a single type.
 
 **Intuition**: This allows for the `on_diff` function to be inferred.
 -/
+@[implicit_reducible]
 def ind_ctx_const
     {X : Sort u} [EqvOp X] {on_diff : ℕ → ℕ → X}
     (on_diff_subst :
@@ -297,40 +300,91 @@ def Induction.Context.rec_diff_subst
 
 end universe_polymorphic_induction
 
-/--
-Every integer can be expressed as a difference of natural numbers.
+/-- Every integer can be expressed as a difference of natural numbers. -/
+def as_diff [Induction.{1} ℤ] (a : ℤ) : { d : ℕ × ℕ // a ≃ d.1 - d.2 } := by
+  let motive (z : ℤ) : Type := { d : ℕ × ℕ // z ≃ d.1 - d.2 }
 
-**Property intution**: See the comment the top of this file, or the intuition
-for `ind_diff`.
+  /-
+  It may be possible to extract this code into a function to generically define
+  IndexedFamily for simple dependent motives. However, the proofs of properties
+  all require the definition of `msubst` to be transparent, so it's not as
+  simple as passing `msubst` as an argument to the function.
+  -/
+  let idx_fam : IndexedFamily motive := by
+    let meqv {x : ℤ} : EqvOp (motive x) :=
+      Relation.Equivalence.Impl.Mapped.eqvOp (λ _ => x)
 
-**Proof intuition**: Use "difference" induction: show the property respects
-integer equivalence, define an `on_diff` function, and create a context. Then
-use the context to invoke `ind_diff` on the input integer.
--/
-theorem as_diff [Induction.{0} ℤ] (a : ℤ) : ∃ (n m : ℕ), a ≃ n - m := by
-  let motive (z : ℤ) : Prop := ∃ (n m : ℕ), z ≃ n - m
+    let msubst {x₁ x₂ : ℤ} : x₁ ≃ x₂ → motive x₁ → motive x₂ := by
+      intro (_ : x₁ ≃ x₂) (_ : motive x₁)
+      show motive x₂
 
-  let msubst {x₁ x₂ : ℤ} : x₁ ≃ x₂ → motive x₁ → motive x₂ := by
-    intro (_ : x₁ ≃ x₂) (_ : motive x₁)
-    show motive x₂
+      let (Subtype.mk (Prod.mk (n : ℕ) (m : ℕ)) (_ : x₁ ≃ n - m)) := ‹motive x₁›
+      have : x₂ ≃ n - m := calc
+        _ = x₂    := rfl
+        _ ≃ x₁    := Rel.symm ‹x₁ ≃ x₂›
+        _ ≃ n - m := ‹x₁ ≃ n - m›
+      have : { d : ℕ × ℕ // x₂ ≃ d.1 - d.2 } := Subtype.mk (n, m) ‹x₂ ≃ n - m›
+      have : motive x₂ := this
+      exact this
 
-    have Exists.intro (n : ℕ) (Exists.intro (m : ℕ) (_ : x₁ ≃ n - m)) :=
-      ‹motive x₁›
-    have : x₂ ≃ n - m := calc
-      _ = x₂    := rfl
-      _ ≃ x₁    := Rel.symm ‹x₁ ≃ x₂›
-      _ ≃ n - m := ‹x₁ ≃ n - m›
-    have : ∃ (n m : ℕ), x₂ ≃ n - m := Exists.intro n (Exists.intro m this)
-    have : motive x₂ := this
+    have msubst_refl {x : ℤ} {mx : motive x} : msubst Rel.refl mx ≃ mx :=
+      Rel.refl
+
+    have msubst_trans
+        {x y z : ℤ} {mx : motive x} (xy : x ≃ y) (yz : y ≃ z)
+        : msubst ‹y ≃ z› (msubst ‹x ≃ y› mx) ≃
+          msubst (Rel.trans ‹x ≃ y› ‹y ≃ z›) mx
+        :=
+      Rel.refl
+
+    have msubst_addrem
+        {x y : ℤ} {mx₁ mx₂ : motive x} (xy : x ≃ y)
+        : msubst ‹x ≃ y› mx₁ ≃ msubst ‹x ≃ y› mx₂ ↔ mx₁ ≃ mx₂
+        := by
+      have : y ≃ y ↔ x ≃ x := Iff.intro (λ _ => Rel.refl) (λ _ => Rel.refl)
+      calc
+        _ ↔ msubst ‹x ≃ y› mx₁ ≃ msubst ‹x ≃ y› mx₂ := Iff.rfl
+        _ ↔ y ≃ y                                   := Iff.rfl
+        _ ↔ x ≃ x                                   := ‹y ≃ y ↔ x ≃ x›
+        _ ↔ mx₁ ≃ mx₂                               := Iff.rfl
+    have msubst_substR
+        {x y : ℤ} {mx₁ mx₂ : motive x} (xy : x ≃ y)
+        : mx₁ ≃ mx₂ → msubst ‹x ≃ y› mx₁ ≃ msubst ‹x ≃ y› mx₂
+        :=
+      (msubst_addrem ‹x ≃ y›).mpr
+    have msubst_injectR
+        {x y : ℤ} {mx₁ mx₂ : motive x} (xy : x ≃ y)
+        : msubst ‹x ≃ y› mx₁ ≃ msubst ‹x ≃ y› mx₂ → mx₁ ≃ mx₂
+        :=
+      (msubst_addrem ‹x ≃ y›).mp
+
+    have : IndexedFamily motive := {
+      fam_eqv := meqv
+      fsubst := msubst
+      fsubst_refl := msubst_refl
+      _fsubst_trans := msubst_trans
+      _fsubst_substR := msubst_substR
+      _fsubst_injectR := msubst_injectR
+    }
     exact this
-  let idx_fam := Function.idx_fam_prop msubst
 
-  let on_diff (k j : ℕ) : motive ((k:ℤ) - j) :=
-    Exists.intro k (Exists.intro j Rel.refl)
-  let ctx := ind_ctx_prop on_diff
+  let ctx : Induction.Context motive :=
+    let on_diff (k j : ℕ) : motive ((k:ℤ) - j) := Subtype.mk (k, j) Rel.refl
+    have on_diff_subst
+        {n₁ m₁ n₂ m₂ : ℕ} {diff_eqv : (n₁:ℤ) - m₁ ≃ n₂ - m₂}
+        : fsubst diff_eqv (on_diff n₁ m₁) ≃ on_diff n₂ m₂
+        := by
+      have : (n₂:ℤ) - m₂ ≃ (n₂:ℤ) - m₂ := Rel.refl
+      have : fsubst diff_eqv (on_diff n₁ m₁) ≃ on_diff n₂ m₂ := this
+      exact this
+
+    show Induction.Context motive from {
+      on_diff := on_diff
+      on_diff_subst := on_diff_subst
+    }
 
   have : motive a := ctx.ind_diff a
-  have : ∃ (n m : ℕ), a ≃ n - m := this
+  have : { d : ℕ × ℕ // a ≃ d.1 - d.2 } := this
   exact this
 
 end Lean4Axiomatic.Integer

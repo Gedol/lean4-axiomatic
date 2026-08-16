@@ -62,7 +62,7 @@ class MinMax
   toOps : MinMax.Ops ℚ
   toProps : MinMax.Props ℚ
 
-attribute [instance] MinMax.toOps
+attribute [implicit_reducible, instance] MinMax.toOps
 attribute [instance] MinMax.toProps
 
 /-! ## Derived properties -/

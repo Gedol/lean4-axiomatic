@@ -61,7 +61,7 @@ class Order
   toOps : Order.Ops ℚ
   toProps : Order.Props ℚ
 
-attribute [instance] Order.toOps
+attribute [implicit_reducible, instance] Order.toOps
 attribute [instance] Order.toProps
 
 /-! ## Derived properties -/
@@ -282,6 +282,15 @@ theorem neg_le_sgn {p q : ℚ} : ¬(p ≤ q) ↔ sgn (p - q) ≃ 1 := by
     show False
     have : sgn (p - q) ≄ 1 := le_sgn.mp ‹p ≤ q›
     exact absurd ‹sgn (p - q) ≃ 1› ‹sgn (p - q) ≄ 1›
+
+/--
+The negation of the _greater than or equivalent to_ relation is the same as the
+_less than_ relation.
+-/
+theorem not_ge_iff_lt {p q : ℚ} : ¬(p ≥ q) ↔ p < q := calc
+  _ ↔ ¬(p ≥ q)        := Iff.rfl
+  _ ↔ sgn (q - p) ≃ 1 := neg_le_sgn
+  _ ↔ p < q           := gt_sgn.symm
 
 /--
 The _less than_ relation on rational numbers is irreflexive.
@@ -1120,6 +1129,27 @@ theorem le_diff_upper {ε p q : ℚ} : q - p ≤ ε ↔ q ≤ p + ε := calc
   _ ↔          q ≤ ε + p := by srw [add_assoc, add_inverseL, add_identR]
   _ ↔          q ≤ p + ε := by srw [add_comm]
 
+/--
+A rational is _greater than or equivalent to_ another exactly when their
+difference is also _greater than or equivalent to_ zero.
+-/
+theorem ge_iff_sub_nonneg {p q : ℚ} : p ≥ q ↔ p - q ≥ 0 := calc
+  _ ↔ p ≥ q            := Rel.refl
+  _ ↔ sgn (p - q) ≄ -1 := ge_sgn
+  _ ↔ p - q ≥ 0        := ge_zero_sgn.symm
+
+/--
+Nonnegative rational numbers are the only rationals where squaring their
+signum value leaves it unchanged.
+-/
+theorem sgn_sqr_nonneg {p : ℚ} : (sgn p)^2 ≃ sgn p ↔ p ≥ 0 := calc
+  _ ↔ (sgn p)^2 ≃ sgn p     := Iff.rfl
+  _ ↔ sgn p ≃ 0 ∨ sgn p ≃ 1 := Integer.sqr_idemp_reasons
+  _ ↔ p ≃ 0 ∨ sgn p ≃ 1     := iff_subst_covar or_mapL sgn_zero.symm
+  _ ↔ p ≃ 0 ∨ p > 0         := iff_subst_covar or_mapR gt_zero_sgn.symm
+  _ ↔ p > 0 ∨ p ≃ 0         := Or.comm
+  _ ↔ p ≥ 0                 := ge_cases.symm
+
 variable [Reciprocation ℚ] [Division ℚ]
 
 /--
@@ -1152,6 +1182,36 @@ theorem sgn_sub_recip
     _ ≃ sgn (q - p) * sgn (p * q)     := sgn_div
     _ ≃ sgn (q - p) * 1               := by srw [gt_zero_sgn.mp ‹p * q > 0›]
     _ ≃ sgn (q - p)                   := AA.identR
+
+/--
+Divide both operands of _less than or equivalent to_ by the same positive
+value.
+-/
+theorem le_substN_div_gt_zero
+    {p q r : ℚ} (r_pos : r > 0)
+    : have : AP (r ≄ 0) := AP.mk (pos_nonzero ‹r > 0›)
+      p ≤ q → p/r ≤ q/r
+    := by
+  intro (_ : AP (r ≄ 0)) (_ : p ≤ q)
+  show p/r ≤ q/r
+  have : q - p ≥ 0 := ge_iff_sub_nonneg.mp ‹p ≤ q›
+  have : sgn (q/r - p/r) ≃ sgn (q - p) := calc
+    _ = sgn (q/r - p/r)         := rfl
+    _ ≃ sgn (q * r⁻¹ - p * r⁻¹) := by srw [div_mul_recip, div_mul_recip]
+    _ ≃ sgn ((q - p) * r⁻¹)     := by srw [←mul_distribR_sub]
+    _ ≃ sgn ((q - p)/r)         := by srw [←div_mul_recip]
+    _ ≃ sgn (q - p) * sgn r     := sgn_div
+    _ ≃ sgn (q - p) * 1         := by srw [gt_zero_sgn.mp ‹r > 0›]
+    _ ≃ sgn (q - p)             := Integer.mul_identR
+  have : (sgn (q/r - p/r))^2 ≃ sgn (q/r - p/r) := calc
+    _ = (sgn (q/r - p/r))^2 := rfl
+    _ ≃ (sgn (q - p))^2     := by srw [‹sgn (q/r - p/r) ≃ sgn (q - p)›]
+    _ ≃ sgn (q - p)         := sgn_sqr_nonneg.mpr ‹q - p ≥ 0›
+    _ ≃ sgn (q/r - p/r)     := by srw [←‹sgn (q/r - p/r) ≃ sgn (q - p)›]
+  have : q/r - p/r ≥ 0 :=
+    sgn_sqr_nonneg.mp ‹(sgn (q/r - p/r))^2 ≃ sgn (q/r - p/r)›
+  have : p/r ≤ q/r := ge_iff_sub_nonneg.mpr ‹q/r - p/r ≥ 0›
+  exact this
 
 variable [Induction.{1} ℚ]
 
@@ -1194,8 +1254,7 @@ already obvious using algebra. Add `sgn` on both sides and simplify.
 -/
 theorem ge_iff_sub_sgn_nonneg {p q : ℚ} : p ≥ q ↔ sgn (p - q) ≥ 0 := calc
   _ ↔ p ≥ q            := Rel.refl
-  _ ↔ sgn (p - q) ≄ -1 := ge_sgn
-  _ ↔ p - q ≥ 0        := ge_zero_sgn.symm
+  _ ↔ p - q ≥ 0        := ge_iff_sub_nonneg
   _ ↔ sgn (p - q) ≥ 0  := sgn_preserves_ge_zero
 
 /--

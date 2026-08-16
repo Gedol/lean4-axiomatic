@@ -171,6 +171,7 @@ Formal differences obey all expected properties of integer induction.
 
 Not an instance to prevent clashes with the `Induction` instances in `Integer`.
 -/
+@[implicit_reducible]
 def ind_props : Induction.Props (Difference ℕ) := {
   ind_diff_subst := ind_diff_subst
   ind_diff_eval := ind_diff_eval
@@ -181,6 +182,7 @@ Formal differences fully implement integer "difference" induction.
 
 Not an instance to prevent clashes with the `Induction` instances in `Integer`.
 -/
+@[implicit_reducible]
 def induction : Induction (Difference ℕ) := {
   toOps := ind_ops
   toProps := ind_props

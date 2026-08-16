@@ -250,10 +250,19 @@ own sign value.
 **Proof intuition**: All differences with value zero have components that are
 equivalent. The `sgn` function evaluates to zero in that case.
 -/
-theorem sgn_zero {a : Difference ℕ} : a ≃ 0 ↔ sgn a ≃ 0 := by
+theorem sgn_zero {a : Difference ℕ} : sgn a ≃ 0 ↔ a ≃ 0 := by
   revert a; intro (n——m)
   apply Iff.intro
   case mp =>
+    intro (_ : sgn (n——m) ≃ 0)
+    show n——m ≃ 0
+    have : ord_sgn (compare n m) ≃ (0:Difference ℕ) := ‹sgn (n——m) ≃ 0›
+    have : ord_sgn (compare n m) ≃ ord_sgn Ordering.eq := this
+    have : compare n m = Ordering.eq := ord_sgn_inject this
+    have : n ≃ m := Natural.compare_eq.mp this
+    have : n——m ≃ 0 := zero_diff_eqv.mpr this
+    exact this
+  case mpr =>
     intro (_ : n——m ≃ 0)
     show sgn (n——m) ≃ 0
     have : n ≃ m := zero_diff_eqv.mp ‹n——m ≃ 0›
@@ -262,15 +271,6 @@ theorem sgn_zero {a : Difference ℕ} : a ≃ 0 ↔ sgn a ≃ 0 := by
       by srw [‹compare n m = Ordering.eq›]
     have : ord_sgn (compare n m) ≃ (0:Difference ℕ) := this
     have : sgn (n——m) ≃ 0 := this
-    exact this
-  case mpr =>
-    intro (_ : sgn (n——m) ≃ 0)
-    show n——m ≃ 0
-    have : ord_sgn (compare n m) ≃ (0:Difference ℕ) := ‹sgn (n——m) ≃ 0›
-    have : ord_sgn (compare n m) ≃ ord_sgn Ordering.eq := this
-    have : compare n m = Ordering.eq := ord_sgn_inject this
-    have : n ≃ m := Natural.compare_eq.mp this
-    have : n——m ≃ 0 := zero_diff_eqv.mpr this
     exact this
 
 /--

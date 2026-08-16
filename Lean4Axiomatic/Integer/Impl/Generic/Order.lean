@@ -17,6 +17,7 @@ local instance leOp : LE ℤ := { le := le }
 /-- Definition of _less than_ that matches the axioms. -/
 def lt (a b : ℤ) : Prop := a ≤ b ∧ a ≄ b
 
+@[implicit_reducible]
 def order : Order ℤ := {
   leOp := leOp
   le_iff_add_nat := Iff.intro id id

@@ -91,7 +91,7 @@ class Reciprocation
   toOps : Reciprocation.Ops ℚ
   toProps : Reciprocation.Props ℚ
 
-attribute [instance] Reciprocation.toOps
+attribute [implicit_reducible, instance] Reciprocation.toOps
 attribute [instance] Reciprocation.toProps
 
 /-- Operations pertaining to rational number division. -/
@@ -140,7 +140,7 @@ class Division
   toOps : Division.Ops ℚ
   toProps : Division.Props ℚ
 
-attribute [instance] Division.toOps
+attribute [implicit_reducible, instance] Division.toOps
 attribute [instance] Division.toProps
 
 /-! ## Derived properties -/
@@ -179,7 +179,7 @@ The reciprocal of a nonzero rational is itself nonzero.
 **Property and proof intuition**: For `p * p⁻¹ ≃ 1` to hold, neither factor can
 be zero.
 -/
-theorem recip_preserves_nonzero {p : ℚ} [AP (p ≄ 0)] : p⁻¹ ≄ 0 := by
+theorem recip_nonzero {p : ℚ} [AP (p ≄ 0)] : p⁻¹ ≄ 0 := by
   intro (_ : p⁻¹ ≃ 0)
   show False
   have : p ≃ 0 := calc
@@ -190,14 +190,12 @@ theorem recip_preserves_nonzero {p : ℚ} [AP (p ≄ 0)] : p⁻¹ ≄ 0 := by
   exact absurd ‹p ≃ 0› ‹AP (p ≄ 0)›.ev
 
 /--
-Instance equivalent of `recip_preserves_nonzero`.
+Instance equivalent of `recip_nonzero`.
 
 Enables easy syntax for nested reciprocals, or reciprocals in denominators.
 -/
-instance recip_preserves_nonzero_inst
-    {p : ℚ} [AP (p ≄ 0)] : AP (p⁻¹ ≄ 0)
-    :=
-  AP.mk recip_preserves_nonzero
+instance recip_nonzero_inst {p : ℚ} [AP (p ≄ 0)] : AP (p⁻¹ ≄ 0) :=
+  AP.mk recip_nonzero
 
 /--
 Double reciprocation is idempotent.

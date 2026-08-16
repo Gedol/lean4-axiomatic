@@ -139,11 +139,13 @@ theorem ind_ratio_eval
     _ ≃ or_ab                                       := fsubst_refl
     _ = ctx.on_ratio a b                            := rfl
 
+@[implicit_reducible]
 def ind_props : Induction.Props (Fraction ℤ) := {
   ind_ratio_subst := ind_ratio_subst
   ind_ratio_eval := ind_ratio_eval
 }
 
+@[implicit_reducible]
 def induction : Induction (Fraction ℤ) := {
   toOps := ind_ops
   toProps := ind_props

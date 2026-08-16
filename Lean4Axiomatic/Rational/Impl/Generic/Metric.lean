@@ -31,6 +31,7 @@ local instance metric_ops : Metric.Ops ℚ := {
   _between := _between
 }
 
+@[implicit_reducible]
 def metric_props : Metric.Props ℚ := {
   abs_sgn := eqv_refl
   dist_abs := eqv_refl
@@ -38,6 +39,7 @@ def metric_props : Metric.Props ℚ := {
   between_order := Iff.intro id id
 }
 
+@[implicit_reducible]
 def metric : Metric ℚ := {
   toOps := metric_ops
   toProps := metric_props

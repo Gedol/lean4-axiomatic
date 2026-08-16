@@ -51,7 +51,7 @@ class Negation
   toOps : Negation.Ops ℚ
   toProps : Negation.Props ℚ
 
-attribute [instance] Negation.toOps
+attribute [implicit_reducible, instance] Negation.toOps
 attribute [instance] Negation.toProps
 
 /-- Operations pertaining to rational number subtraction. -/
@@ -84,7 +84,7 @@ class Subtraction
   toOps : Subtraction.Ops ℚ
   toProps : Subtraction.Props ℚ
 
-attribute [instance] Subtraction.toOps
+attribute [implicit_reducible, instance] Subtraction.toOps
 attribute [instance] Subtraction.toProps
 
 /-! ## Derived properties -/

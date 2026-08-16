@@ -87,7 +87,7 @@ class Metric
   toOps : Metric.Ops ℚ
   toProps : Metric.Props ℚ
 
-attribute [instance] Metric.toOps
+attribute [implicit_reducible, instance] Metric.toOps
 attribute [instance] Metric.toProps
 
 /-! ## Derived properties -/

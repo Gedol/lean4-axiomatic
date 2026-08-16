@@ -61,7 +61,7 @@ class Exponentiation
   toOps : Exponentiation.Ops α ℕ
   toProps : Exponentiation.Props mul ident
 
-attribute [instance] Exponentiation.toOps
+attribute [implicit_reducible, instance] Exponentiation.toOps
 attribute [instance] Exponentiation.toProps
 
 local instance ofNatIdent {α : Type} [EqvOp α] {binop : α → α → α} {ident : α} [CA.Monoid.Monoid α binop ident] : OfNat α 1 := {
@@ -433,5 +433,22 @@ theorem pow_flatten
       _ ≃ x^(n * step m')  := by srw [←mul_step]
 
 end general
+
+variable [Addition ℕ] [Multiplication ℕ] [Exponentiation ℕ ℕ]
+
+/-- Expand a natural number binomial's square. -/
+theorem binom_sqr {n m : ℕ} : (n + m)^2 ≃ n^2 + 2 * n * m + m^2 := calc
+  _ = (n + m)^2                         := rfl
+  _ ≃ (n + m) * (n + m)                 := pow_two
+  _ ≃ n * (n + m) + m * (n + m)         := AA.distribR
+  _ ≃ (n * n + n * m) + m * (n + m)     := by srw [Natural.mul_distribL_add]
+  _ ≃ (n * n + n * m) + (m * n + m * m) := by srw [Natural.mul_distribL_add]
+  _ ≃ (n * n + n * m) + (n * m + m * m) := by srw [AA.comm]
+  _ ≃ ((n * n + n * m) + n * m) + m * m := Rel.symm AA.assoc
+  _ ≃ n * n + (n * m + n * m) + m * m   := by srw [AA.assoc]
+  _ ≃ n * n + 2 * (n * m) + m * m       := by srw [←two_mul]
+  _ ≃ n * n + 2 * n * m + m * m         := by srw [←AA.assoc]
+  _ ≃ n^2 + 2 * n * m + m * m           := by srw [←pow_two]
+  _ ≃ n^2 + 2 * n * m + m^2             := by srw [←pow_two]
 
 end Lean4Axiomatic.Natural

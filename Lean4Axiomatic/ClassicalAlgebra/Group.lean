@@ -37,7 +37,7 @@ class Group (α : Type) [EqvOp α]
     (inverse : semiOutParam (α → α)) where
   toProps : Group.Props α binop ident inverse
 
-attribute [instance] Group.toProps
+attribute [implicit_reducible, instance] Group.toProps
 
 /-- Enables the use of the `· * ·` operator for binop. -/
 local instance group_mul_op_inst

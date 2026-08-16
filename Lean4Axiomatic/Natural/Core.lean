@@ -44,7 +44,7 @@ class Equality (ℕ : Type) where
   /-- Natural numbers have a decidable equality relation. -/
   eqvOp? : Relation.Equivalence.EqvOp? ℕ
 
-attribute [instance] Equality.eqvOp?
+attribute [implicit_reducible, instance] Equality.eqvOp?
 
 export Equality (eqvOp?)
 
@@ -75,8 +75,7 @@ class Literals (ℕ : outParam Type) [Constructor.Ops ℕ] [Equality ℕ] where
   literal_step {n : Nat}
     : OfNat.ofNat (α := ℕ) (Nat.succ n) ≃ step (OfNat.ofNat n)
 
-
-attribute [instance] Literals.literal
+attribute [implicit_reducible, instance] Literals.literal
 
 /-
 Ensure that natural number literals without an inferred type default to this
@@ -132,6 +131,7 @@ The solution is to include only the level-`0` instance in `Natural` by default,
 since it's used very frequently. Code that needs the level-`1` instance for
 recursion must specificially request it.
 -/
+@[univ_out_params]
 class Induction (ℕ : outParam Type) [Core ℕ] where
   /--
   **Peano axiom 5**: the principle of mathematical induction.
@@ -147,13 +147,15 @@ class Induction (ℕ : outParam Type) [Core ℕ] where
   At higher universe levels, `motive` generates an indexed family of types, and
   this axiom can then be used to produce data recursively.
   -/
-  ind {motive : ℕ → Sort u}
-    : motive 0 → ((m : ℕ) → motive m → motive (step m)) → (n : ℕ) → motive n
+  ind
+    {motive : ℕ → Sort u}
+    (zero : motive 0) (step : (m : ℕ) → motive m → motive (step m))
+    : (n : ℕ) → motive n
 
   /-- The witness for `motive 0` comes from the base case argument. -/
   ind_zero
-    {motive : ℕ → Sort u}
-    {z : motive 0} {s : (m : ℕ) → motive m → motive (step m)} : ind z s 0 = z
+    {motive : ℕ → Sort u} [EqvOp (motive 0)]
+    {z : motive 0} {s : (m : ℕ) → motive m → motive (step m)} : ind z s 0 ≃ z
 
   /--
   The witness for `motive (step n)` comes from applying the inductive case
@@ -162,7 +164,7 @@ class Induction (ℕ : outParam Type) [Core ℕ] where
   ind_step
     {motive : ℕ → Sort u}
     {z : motive 0} {s : (m : ℕ) → motive m → motive (step m)}
-    {n : ℕ} : ind z s (step n) = s n (ind z s n)
+    {n : ℕ} [EqvOp (motive (step n))] : ind z s (step n) ≃ s n (ind z s n)
 
 export Induction (ind ind_step ind_zero)
 
@@ -239,11 +241,13 @@ Evaluate `rec_on` at zero.
 **Property and proof intuition**: Zero is the base case for induction and
 recursion, so we'd expect `rec_on` to return the corresponding value.
 -/
-theorem rec_on_zero {α : Sort u} {z : α} {s : α → α} : rec_on 0 z s = z := calc
+theorem rec_on_zero
+    {α : Sort u} [EqvOp α] {z : α} {s : α → α} : rec_on 0 z s ≃ z
+    := calc
   _ = rec_on 0 z s          := rfl
   _ = ind_on 0 z (λ _ => s) := rfl
   _ = ind z (λ _ => s) 0    := rfl
-  _ = z                     := ind_zero
+  _ ≃ z                     := ind_zero
 
 /--
 Evaluate `rec_on` at `step n` for some natural number `n`.
@@ -252,18 +256,67 @@ Evaluate `rec_on` at `step n` for some natural number `n`.
 expect to perform some computation on the result of the recursive call for `n`.
 -/
 theorem rec_on_step
-    {α : Sort u} {n : ℕ} {z : α} {s : α → α}
-    : rec_on (step n) z s = s (rec_on n z s)
+    {α : Sort u} [EqvOp α] {n : ℕ} {z : α} {s : α → α}
+    : rec_on (step n) z s ≃ s (rec_on n z s)
     := calc
   _ = rec_on (step n) z s               := rfl
   _ = ind_on (step n) z (λ _ => s)      := rfl
   _ = ind z (λ _ => s) (step n)         := rfl
-  _ = (λ _ => s) n (ind z (λ _ => s) n) := ind_step
+  _ ≃ (λ _ => s) n (ind z (λ _ => s) n) := ind_step
   _ = s (ind z (λ _ => s) n)            := rfl
   _ = s (ind_on n z (λ _ => s))         := rfl
   _ = s (rec_on n z s)                  := rfl
 
 end universe_polymorphic_induction
+
+/--
+Recursion on equivalent natural numbers produces equivalent results, with
+identical arguments for the _zero_ and _step_ cases.
+-/
+@[gcongr]
+theorem rec_on_subst
+    {α : Sort u} [EqvOp α] {z : α} {s : α → α} {n₁ n₂ : ℕ}
+    [Induction.{0} ℕ] [Induction.{u} ℕ] [AA.Substitutive₁ s (· ≃ ·) (· ≃ ·)]
+    : n₁ ≃ n₂ → rec_on n₁ z s ≃ rec_on n₂ z s
+    := by
+  revert n₂
+  let motive₁ x := {n₂ : ℕ} → x ≃ n₂ → rec_on x z s ≃ rec_on n₂ z s
+  show motive₁ n₁
+
+  apply ind_on n₁ (motive := motive₁)
+  case zero =>
+    intro (n₂ : ℕ)
+    show 0 ≃ n₂ → rec_on 0 z s ≃ rec_on n₂ z s
+
+    apply cases_on n₂ (motive := λ y => 0 ≃ y → rec_on 0 z s ≃ rec_on y z s)
+    case zero =>
+      intro (_ : 0 ≃ 0)
+      show rec_on 0 z s ≃ rec_on 0 z s
+      exact Rel.refl
+    case step =>
+      intro (m : ℕ) (_ : 0 ≃ step m)
+      exact absurd (Rel.symm ‹0 ≃ step m›) step_neqv_zero
+  case step =>
+    intro
+      (m₁ : ℕ) (ih₁ : {m₂ : ℕ} → m₁ ≃ m₂ → rec_on m₁ z s ≃ rec_on m₂ z s)
+      (n₂ : ℕ)
+    let motive₂ y := step m₁ ≃ y → rec_on (step m₁) z s ≃ rec_on y z s
+    show motive₂ n₂
+
+    apply cases_on n₂ (motive := motive₂)
+    case zero =>
+      intro (_ : step m₁ ≃ 0)
+      exact absurd ‹step m₁ ≃ 0› step_neqv_zero
+    case step =>
+      intro (m₂ : ℕ) (_ : step m₁ ≃ step m₂)
+      show rec_on (step m₁) z s ≃ rec_on (step m₂) z s
+
+      have : m₁ ≃ m₂ := AA.inject ‹step m₁ ≃ step m₂›
+      calc
+        _ = rec_on (step m₁) z s := rfl
+        _ ≃ s (rec_on m₁ z s)    := rec_on_step
+        _ ≃ s (rec_on m₂ z s)    := AA.subst₁ (ih₁ ‹m₁ ≃ m₂›)
+        _ ≃ rec_on (step m₂) z s := Rel.symm rec_on_step
 
 /--
 A natural number is either zero, or the successor of another natural number.

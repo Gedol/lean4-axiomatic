@@ -26,6 +26,7 @@ local instance sub_ops : Subtraction.Ops ℤ := {
 theorem sub_defn {a b : ℤ} : a - b ≃ a + (-b) := Rel.refl
 
 /-- The `sub` function meets all the criteria needed for subtraction. -/
+@[implicit_reducible]
 def sub_props : Subtraction.Props ℤ := {
   sub_defn := sub_defn
 }

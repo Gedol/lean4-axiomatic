@@ -59,7 +59,7 @@ class Addition
   toOps : Addition.Ops ℚ
   toProps : Addition.Props ℚ
 
-attribute [instance] Addition.toOps
+attribute [implicit_reducible, instance] Addition.toOps
 attribute [instance] Addition.toProps
 
 /-! ## Derived properties -/

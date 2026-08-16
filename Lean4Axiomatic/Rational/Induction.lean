@@ -34,6 +34,7 @@ class Induction.Context
     : fsubst ratio_eqv (on_ratio a₁ b₁) ≃ on_ratio a₂ b₂
 
 /-- The fundamental induction operations on rational numbers. -/
+@[univ_out_params]
 class Induction.Ops
     {ℕ ℤ : outParam Type} [Natural ℕ] [Integer (ℕ := ℕ) ℤ]
     (ℚ : Type) [Core (ℤ := ℤ) ℚ] [Addition ℚ] [Multiplication ℚ]
@@ -79,15 +80,15 @@ class Induction.Props
     : fsubst ‹p₁ ≃ p₂› (ctx.ind_ratio p₁) ≃ ctx.ind_ratio p₂
 
 /-- All rational number induction axioms. -/
-class Induction
+class Induction.{u}
     {ℕ ℤ : outParam Type} [Natural ℕ] [Integer (ℕ := ℕ) ℤ]
     (ℚ : Type) [Core (ℤ := ℤ) ℚ] [Addition ℚ] [Multiplication ℚ]
     [Reciprocation ℚ] [Division ℚ]
     where
-  toOps : Induction.Ops ℚ
+  toOps : Induction.Ops.{u} ℚ
   toProps : Induction.Props ℚ
 
-attribute [instance] Induction.toOps
+attribute [implicit_reducible, instance] Induction.toOps
 attribute [instance] Induction.toProps
 
 /-! ## Derived properties -/
@@ -98,6 +99,7 @@ variable
   [Reciprocation ℚ] [Division ℚ] [Induction ℚ]
 
 /-- Create a rational induction context for a `ℚ → Prop` motive. -/
+@[implicit_reducible]
 def ind_ctx_prop
     {motive : ℚ → Prop} [IndexedFamily motive]
     (on_ratio : (a b : ℤ) → [AP (b ≄ 0)] → motive (a / b))
@@ -111,6 +113,7 @@ def ind_ctx_prop
 Create a rational induction context for a "constant" motive; i.e. a motive of
 the form `ℚ → X` where `X` is a specific type (not a type family).
 -/
+@[implicit_reducible]
 def ind_ctx_const
     {X : Sort u} [EqvOp X] {on_ratio : (a b : ℤ) → [AP (b ≄ 0)] → X}
     (on_ratio_subst :

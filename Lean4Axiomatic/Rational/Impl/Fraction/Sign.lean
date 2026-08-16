@@ -88,7 +88,7 @@ theorem sgn_zero_only_for_zero {p : Fraction ℤ} : sgn p ≃ 0 → p ≃ 0 := b
   intro (_ : sgn p ≃ 0)
   show p ≃ 0
   have : sgn p.numerator ≃ 0 := ‹sgn p ≃ 0›
-  have : p.numerator ≃ 0 := Integer.sgn_zero.mpr this
+  have : p.numerator ≃ 0 := Integer.sgn_zero.mp this
   have : p ≃ 0 := eqv_zero_iff_numerator_eqv_zero.mpr this
   exact this
 
@@ -147,7 +147,7 @@ theorem sgn_trichotomy
   | AA.OneOfThree.first (_ : p.numerator ≃ 0) =>
     have : sgn p ≃ 0 := calc
       sgn p           ≃ _ := Rel.refl
-      sgn p.numerator ≃ _ := Integer.sgn_zero.mp ‹p.numerator ≃ 0›
+      sgn p.numerator ≃ _ := Integer.sgn_zero.mpr ‹p.numerator ≃ 0›
       0               ≃ _ := Rel.refl
     exact AA.OneOfThree.first this
   | AA.OneOfThree.second (_ : Positive p.numerator) =>

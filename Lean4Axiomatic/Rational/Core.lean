@@ -101,7 +101,7 @@ class Conversion
   toOps : Conversion.Ops (ℤ := ℤ) ℚ
   toProps : Conversion.Props ℚ
 
-attribute [instance] Conversion.toOps
+attribute [implicit_reducible, instance] Conversion.toOps
 attribute [instance] Conversion.toProps
 
 /-- All fundamental rational number axioms. -/
@@ -111,8 +111,8 @@ class Core
   toEquivalence : Equivalence ℚ
   toConversion : Conversion (ℤ := ℤ) ℚ
 
-attribute [instance] Core.toConversion
-attribute [instance] Core.toEquivalence
+attribute [implicit_reducible, instance] Core.toConversion
+attribute [implicit_reducible, instance] Core.toEquivalence
 
 variable {ℕ ℤ : Type} [Natural ℕ] [Integer (ℕ := ℕ) ℤ]
 variable {ℚ : Type} [Core (ℤ := ℤ) ℚ]

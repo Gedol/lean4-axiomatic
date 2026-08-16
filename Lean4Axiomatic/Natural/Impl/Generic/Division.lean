@@ -92,6 +92,7 @@ def divide (n m : ℕ) [AP (m ≄ 0)] : EuclideanDivision n m := by
         rem_ub := ‹r < m›
       }
 
+@[implicit_reducible]
 def division : Division ℕ := {
   divide := divide
 }

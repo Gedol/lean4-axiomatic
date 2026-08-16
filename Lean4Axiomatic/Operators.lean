@@ -37,7 +37,7 @@ class TildeDashQuestion {α : Sort u} (β : α → α → Prop) where
 
 export TildeDashQuestion (tildeDashQuestion)
 
-attribute [instance] tildeDashQuestion
+attribute [implicit_reducible, instance] tildeDashQuestion
 
 infix:50 " ≃? " => tildeDashQuestion
 
