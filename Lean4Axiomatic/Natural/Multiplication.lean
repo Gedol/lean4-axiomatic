@@ -572,4 +572,13 @@ instance nat_mul_monoid : CA.Monoid.Monoid (α := ℕ) (· * ·) 1 := {
   toProps := mul_monoid_props
 }
 
+/--
+Bridge instance: `(· * ·)` and `Mul.mul` are definitionally equal (eta), but
+Lean's instance search can't unify them. This alias ensures the monoid is found
+when implicit parameters are resolved as `Mul.mul` (e.g. reverse rewrites with
+`Natural.pow_two`).
+-/
+instance nat_mul_monoid_eta : CA.Monoid.Monoid (α := ℕ) Mul.mul 1 :=
+  nat_mul_monoid
+
 end Lean4Axiomatic.Natural

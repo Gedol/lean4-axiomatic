@@ -13,7 +13,8 @@ variable
   {ℤ : Type}
     [Core (ℕ := ℕ) ℤ] [Addition ℤ] [Multiplication ℤ] [Negation ℤ]
     [Subtraction ℤ] [Induction.{1} ℤ] [Order ℤ] [Sign ℤ] [Metric ℤ]
-    [Natural.Exponentiation ℕ ℤ]
+    [Natural.Exponentiation ℕ (α := ℤ) (mul := (· * ·)) (ident := (1 : ℤ))
+      (minst := integer_mul_monoid)]
 
 /-- Integer Euclidean division with a nonnegative dividend. -/
 def div_euclidean_nonneg

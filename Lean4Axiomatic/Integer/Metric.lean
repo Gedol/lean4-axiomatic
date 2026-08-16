@@ -95,7 +95,9 @@ theorem abs_neg {a : ℤ} : abs (-a) ≃ abs a := calc
   _ ≃ a * sgn a       := neg_involutive
   _ ≃ abs a           := Rel.symm abs_sgn
 
-variable [Natural.Exponentiation ℕ ℤ]
+variable
+  [Natural.Exponentiation ℕ (α := ℤ) (mul := (· * ·)) (ident := (1 : ℤ))
+    (minst := integer_mul_monoid)]
 
 /-- The absolute value of an integer's sign is that sign squared. -/
 theorem abs_sgn_sqr {a : ℤ} : abs (sgn a) ≃ (sgn a)^2 := calc

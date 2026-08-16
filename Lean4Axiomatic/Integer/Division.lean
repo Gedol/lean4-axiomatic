@@ -95,7 +95,9 @@ variable
   {ℕ : Type} [Natural ℕ]
   {ℤ : Type}
     [Core (ℕ := ℕ) ℤ] [Addition ℤ] [Multiplication ℤ] [Order ℤ] [Negation ℤ]
-    [Subtraction ℤ] [Sign ℤ] [Metric ℤ] [Natural.Exponentiation ℕ ℤ]
+    [Subtraction ℤ] [Sign ℤ] [Metric ℤ]
+    [Natural.Exponentiation ℕ (α := ℤ) (mul := (· * ·)) (ident := (1 : ℤ))
+      (minst := integer_mul_monoid)]
 
 /-- Every `BaseDivision`'s divisor must be nonzero. -/
 theorem baseDiv_nonzero_divisor {a b : ℤ} (d : BaseDivision a b) : b ≄ 0 := by

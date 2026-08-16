@@ -87,7 +87,10 @@ theorem odd_eqv {a : ℤ} : Odd a → a ≃ 2 * half_floored a + 1 := by
     _ ≃ 2 * half_floored a + r := by srw [←half_floored_eqv]
     _ ≃ 2 * half_floored a + 1 := by srw [odd_rem.mp ‹Odd a›]
 
-variable [Subtraction ℤ] [Natural.Exponentiation ℕ ℤ]
+variable
+  [Subtraction ℤ]
+  [Natural.Exponentiation ℕ (α := ℤ) (mul := (· * ·)) (ident := (1 : ℤ))
+    (minst := integer_mul_monoid)]
 
 /-- Equivalent integers have equivalent floored halves. -/
 @[gcongr]

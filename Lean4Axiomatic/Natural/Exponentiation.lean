@@ -434,7 +434,7 @@ theorem pow_flatten
 
 end general
 
-variable [Addition ℕ] [Multiplication ℕ] [Exponentiation ℕ ℕ]
+variable [Addition ℕ] [Multiplication ℕ] [Exponentiation ℕ ℕ (· * ·) 1]
 
 /-- Expand a natural number binomial's square. -/
 theorem binom_sqr {n m : ℕ} : (n + m)^2 ≃ n^2 + 2 * n * m + m^2 := calc
