@@ -232,4 +232,13 @@ instance mul_monoid : CA.Monoid.Monoid (α := ℚ) (· * ·) 1 := {
   toProps := mul_monoid_props
 }
 
+/--
+Bridge instance: `(· * ·)` and the bare `mul` operation are definitionally
+equal (eta), but Lean's instance search can't unify them. This alias ensures
+the monoid is found when implicit parameters are resolved as `mul` (e.g. uses
+of `Natural.pow_distribR_mul`).
+-/
+instance mul_monoid_eta : CA.Monoid.Monoid (α := ℚ) mul 1 :=
+  mul_monoid
+
 end Lean4Axiomatic.Rational
